@@ -46,7 +46,7 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
     final sosProvider = Provider.of<SOSProvider>(context);
-    final activeEvent = sosProvider.activeEvent;
+    final activeAlert = sosProvider.activeAlert; // ИСПРАВЛЕНО: activeEvent -> activeAlert
 
     return Scaffold(
       backgroundColor: AppColors.sosRed,
@@ -57,6 +57,8 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
+              
+              // Анимированная иконка
               AnimatedBuilder(
                 animation: _pulseAnimation,
                 builder: (context, child) => Transform.scale(
@@ -73,19 +75,28 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                   child: const Icon(Icons.warning_rounded, size: 100, color: Colors.white),
                 ),
               ),
+              
               const SizedBox(height: AppSpacing.xxl),
+              
+              // Заголовок
               Text(
                 lang.translate('sos_activated'),
                 style: context.textStyles.displaySmall?.semiBold.withColor(Colors.white),
                 textAlign: TextAlign.center,
               ),
+              
               const SizedBox(height: AppSpacing.lg),
+              
+              // Статус
               Text(
                 lang.translate('sending_alert'),
                 style: context.textStyles.bodyLarge?.withColor(Colors.white.withValues(alpha: 0.9)),
                 textAlign: TextAlign.center,
               ),
+              
               const SizedBox(height: AppSpacing.xl),
+              
+              // Индикатор записи
               Container(
                 padding: AppSpacing.paddingMd,
                 decoration: BoxDecoration(
@@ -104,7 +115,9 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                   ],
                 ),
               ),
-              if (activeEvent?.location != null) ...[
+              
+              // Местоположение
+              if (activeAlert?.latitude != null && activeAlert?.longitude != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Container(
                   padding: AppSpacing.paddingMd,
@@ -119,19 +132,48 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                       const SizedBox(width: AppSpacing.sm),
                       Flexible(
                         child: Text(
-                          activeEvent!.location!.address ?? 'Местоположение отправлено',
+                          activeAlert?.address ?? 'Местоположение отправлено',
                           style: context.textStyles.bodyMedium?.withColor(Colors.white),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],
                   ),
                 ),
               ],
+              
+              // Список уведомлений
+              if (activeAlert?.notifications.isNotEmpty ?? false) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Container(
+                  padding: AppSpacing.paddingMd,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.notifications, color: Colors.white, size: 20),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Уведомлено контактов: ${activeAlert!.notifications.length}',
+                        style: context.textStyles.bodyMedium?.withColor(Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
               const Spacer(),
+              
+              // Кнопка отмены
               SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: _cancelSOS,
                   style: ElevatedButton.styleFrom(

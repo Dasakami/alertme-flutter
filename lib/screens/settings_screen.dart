@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
+import 'package:alertme/providers/subscription_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
-import 'package:alertme/models/user.dart';
+import 'package:alertme/models/user.dart'; // ДОБАВЛЕНО
 import 'package:alertme/screens/subscription_screen.dart';
 import 'package:alertme/screens/onboarding_screen.dart';
 
@@ -14,6 +15,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
     final user = authProvider.currentUser;
 
     if (user == null) return const SizedBox();
@@ -36,14 +38,14 @@ class SettingsScreen extends StatelessWidget {
             context,
             icon: Icons.workspace_premium,
             title: lang.translate('subscription'),
-            subtitle: user.subscriptionTier == SubscriptionTier.premium 
+            subtitle: subscriptionProvider.isPremium // ИСПРАВЛЕНО
               ? lang.translate('premium')
               : lang.translate('free'),
-            trailing: user.subscriptionTier == SubscriptionTier.free
+            trailing: !subscriptionProvider.isPremium // ИСПРАВЛЕНО
               ? const Icon(Icons.arrow_forward_ios, size: 16)
               : null,
             onTap: () {
-              if (user.subscriptionTier == SubscriptionTier.free) {
+              if (!subscriptionProvider.isPremium) { // ИСПРАВЛЕНО
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
@@ -71,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, User user) {
+  Widget _buildProfileCard(BuildContext context, UserModel user) { // ИСПРАВЛЕНО: User -> UserModel
     return Card(
       child: Padding(
         padding: AppSpacing.paddingLg,

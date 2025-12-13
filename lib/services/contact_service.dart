@@ -1,80 +1,115 @@
 import 'package:flutter/foundation.dart';
 import 'package:alertme/models/emergency_contact.dart';
-import 'package:alertme/services/storage_service.dart';
+import 'package:alertme/services/api_client.dart';
 
 class ContactService {
-  final StorageService _storage = StorageService();
+  final ApiClient _api = ApiClient();
   List<EmergencyContact> _contacts = [];
 
   List<EmergencyContact> get contacts => List.unmodifiable(_contacts);
 
-  Future<void> loadContacts(String userId) async {
+  Future<void> loadContacts() async {
     try {
-      final jsonList = await _storage.getJsonList(_storage.contactsKey);
-      final List<EmergencyContact> loadedContacts = [];
+      final data = await _api.getJson('/emergency-contacts/', auth: true);
       
-      for (final json in jsonList) {
-        try {
-          final contact = EmergencyContact.fromJson(json);
-          if (contact.userId == userId) {
-            loadedContacts.add(contact);
-          }
-        } catch (e) {
-          debugPrint('Skipping corrupted contact: $e');
-        }
+      List<dynamic> results; // ИСПРАВЛЕНО
+      if (data is List) {
+        results = data as List<dynamic>;
+      } else if (data['results'] is List) {
+        results = data['results'] as List<dynamic>;
+      } else if (data['data'] is List) {
+        results = data['data'] as List<dynamic>;
+      } else {
+        results = [];
       }
       
-      _contacts = loadedContacts;
-      await _saveContacts();
+      _contacts = results
+          .map((e) => EmergencyContact.fromJson(e as Map<String, dynamic>))
+          .toList();
+          
+      debugPrint('✅ Загружено ${_contacts.length} контактов');
     } catch (e) {
-      debugPrint('Error loading contacts: $e');
+      debugPrint('❌ Ошибка загрузки контактов: $e');
       _contacts = [];
+      rethrow;
     }
   }
 
-  Future<void> addContact(EmergencyContact contact) async {
+  Future<EmergencyContact> addContact(EmergencyContact contact) async {
     try {
-      _contacts.add(contact);
-      await _saveContacts();
+      final data = await _api.postJson(
+        '/emergency-contacts/',
+        body: contact.toJson(),
+        auth: true,
+      );
+      
+      final newContact = EmergencyContact.fromJson(data);
+      _contacts.add(newContact);
+      
+      debugPrint('✅ Контакт добавлен: ${newContact.name}');
+      return newContact;
     } catch (e) {
-      debugPrint('Error adding contact: $e');
+      debugPrint('❌ Ошибка добавления контакта: $e');
+      rethrow;
     }
   }
 
-  Future<void> updateContact(EmergencyContact contact) async {
+  Future<EmergencyContact> updateContact(int id, EmergencyContact contact) async {
     try {
-      final index = _contacts.indexWhere((c) => c.id == contact.id);
+      final data = await _api.putJson(
+        '/emergency-contacts/$id/',
+        body: contact.toJson(),
+        auth: true,
+      );
+      
+      final updated = EmergencyContact.fromJson(data);
+      final index = _contacts.indexWhere((c) => c.id == id);
+      
       if (index != -1) {
-        _contacts[index] = contact;
-        await _saveContacts();
+        _contacts[index] = updated;
       }
+      
+      debugPrint('✅ Контакт обновлен: ${updated.name}');
+      return updated;
     } catch (e) {
-      debugPrint('Error updating contact: $e');
+      debugPrint('❌ Ошибка обновления контакта: $e');
+      rethrow;
     }
   }
 
-  Future<void> deleteContact(String contactId) async {
+  Future<void> deleteContact(int contactId) async {
     try {
+      await _api.delete('/emergency-contacts/$contactId/', auth: true);
       _contacts.removeWhere((c) => c.id == contactId);
-      await _saveContacts();
+      debugPrint('✅ Контакт удален: $contactId');
     } catch (e) {
-      debugPrint('Error deleting contact: $e');
+      debugPrint('❌ Ошибка удаления контакта: $e');
+      rethrow;
     }
   }
 
-  Future<void> _saveContacts() async {
+  Future<void> setPrimary(int contactId) async {
     try {
-      final jsonList = _contacts.map((c) => c.toJson()).toList();
-      await _storage.saveJsonList(_storage.contactsKey, jsonList);
+      await _api.postJson(
+        '/emergency-contacts/$contactId/set_primary/',
+        auth: true,
+      );
+      
+      for (var i = 0; i < _contacts.length; i++) {
+        _contacts[i] = _contacts[i].copyWith(
+          isPrimary: _contacts[i].id == contactId,
+          updatedAt: DateTime.now(),
+        );
+      }
+      
+      debugPrint('✅ Основной контакт установлен: $contactId');
     } catch (e) {
-      debugPrint('Error saving contacts: $e');
+      debugPrint('❌ Ошибка установки основного контакта: $e');
+      rethrow;
     }
   }
 
-  int getContactLimit(bool isPremium) => isPremium ? 999 : 1;
-
-  bool canAddContact(bool isPremium) {
-    final limit = getContactLimit(isPremium);
-    return _contacts.length < limit;
-  }
+  bool canAddContact(int maxContacts) => _contacts.length < maxContacts;
+  
+  void clearCache() => _contacts = [];
 }

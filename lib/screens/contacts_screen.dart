@@ -3,44 +3,69 @@ import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/contact_provider.dart';
+import 'package:alertme/providers/subscription_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/models/emergency_contact.dart';
-import 'package:alertme/models/user.dart';
 import 'package:alertme/widgets/contact_card.dart';
 import 'package:alertme/screens/add_contact_screen.dart';
 import 'package:alertme/screens/subscription_screen.dart';
 
-class ContactsScreen extends StatelessWidget {
+class ContactsScreen extends StatefulWidget {
   const ContactsScreen({super.key});
+
+  @override
+  State<ContactsScreen> createState() => _ContactsScreenState();
+}
+
+class _ContactsScreenState extends State<ContactsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ContactProvider>().loadContacts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
     final contactProvider = Provider.of<ContactProvider>(context);
-    final user = authProvider.currentUser;
+    final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
 
-    if (user == null) return const SizedBox();
-
-    final canAdd = contactProvider.canAddContact(user);
-    final limit = contactProvider.getContactLimit(user);
+    final maxContacts = subscriptionProvider.isPremium ? 999 : 3;
+    final canAdd = contactProvider.canAddContact(maxContacts);
 
     return Scaffold(
-      appBar: AppBar(title: Text(lang.translate('emergency_contacts'))),
-      body: contactProvider.contacts.isEmpty
-        ? _buildEmptyState(context, lang)
-        : ListView.separated(
-            padding: AppSpacing.paddingLg,
-            itemCount: contactProvider.contacts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-            itemBuilder: (context, index) {
-              final contact = contactProvider.contacts[index];
-              return ContactCard(
-                contact: contact,
-                onDelete: () => _deleteContact(context, contact),
-              );
-            },
-          ),
+      appBar: AppBar(
+        title: Text(lang.translate('emergency_contacts')),
+        actions: [
+          if (contactProvider.contacts.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => _showInfo(context, lang, maxContacts),
+            ),
+        ],
+      ),
+      body: contactProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : contactProvider.contacts.isEmpty
+              ? _buildEmptyState(context, lang)
+              : RefreshIndicator(
+                  onRefresh: () => context.read<ContactProvider>().loadContacts(),
+                  child: ListView.separated(
+                    padding: AppSpacing.paddingLg,
+                    itemCount: contactProvider.contacts.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final contact = contactProvider.contacts[index];
+                      return ContactCard(
+                        contact: contact,
+                        onDelete: () => _deleteContact(context, contact),
+                        onSetPrimary: () => _setPrimary(context, contact.id),
+                      );
+                    },
+                  ),
+                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           if (canAdd) {
@@ -49,26 +74,27 @@ class ContactsScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const AddContactScreen()),
             );
           } else {
-            _showUpgradeDialog(context, lang, user);
+            _showUpgradeDialog(context, lang, maxContacts);
           }
         },
         icon: const Icon(Icons.add),
         label: Text(lang.translate('add_contact')),
-        backgroundColor: AppColors.deepBlue,
+        backgroundColor: canAdd ? AppColors.deepBlue : AppColors.textSecondary,
         foregroundColor: Colors.white,
       ),
-      bottomSheet: !canAdd
-        ? Container(
-            width: double.infinity,
-            padding: AppSpacing.paddingMd,
-            color: AppColors.softCyan.withValues(alpha: 0.1),
-            child: Text(
-              '${lang.translate('contact_limit_reached')}: $limit',
-              style: context.textStyles.bodyMedium?.withColor(AppColors.deepBlue),
-              textAlign: TextAlign.center,
-            ),
-          )
-        : null,
+      bottomNavigationBar: !canAdd
+          ? Container(
+              padding: AppSpacing.paddingMd,
+              color: AppColors.softCyan.withValues(alpha: 0.1),
+              child: SafeArea(
+                child: Text(
+                  '${lang.translate('contact_limit_reached')}: ${contactProvider.contacts.length}/$maxContacts',
+                  style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.deepBlue),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -79,7 +105,11 @@ class ContactsScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               lang.translate('no_contacts'),
@@ -109,9 +139,17 @@ class ContactsScreen extends StatelessWidget {
             child: const Text('Отмена'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<ContactProvider>().deleteContact(contact.id);
+            onPressed: () async {
               Navigator.pop(context);
+              final ok = await context.read<ContactProvider>().deleteContact(contact.id);
+              if (context.mounted && !ok) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ошибка удаления'),
+                    backgroundColor: AppColors.sosRed,
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.sosRed),
             child: const Text('Удалить'),
@@ -121,12 +159,26 @@ class ContactsScreen extends StatelessWidget {
     );
   }
 
-  void _showUpgradeDialog(BuildContext context, LanguageProvider lang, User user) {
+  void _setPrimary(BuildContext context, int contactId) async {
+    final ok = await context.read<ContactProvider>().setPrimary(contactId);
+    if (!context.mounted) return;
+    
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Основной контакт установлен'),
+          backgroundColor: AppColors.softCyan,
+        ),
+      );
+    }
+  }
+
+  void _showUpgradeDialog(BuildContext context, LanguageProvider lang, int limit) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(lang.translate('contact_limit_reached')),
-        content: Text(lang.translate('upgrade_for_more')),
+        content: Text('Вы достигли лимита в $limit контактов. ${lang.translate('upgrade_for_more')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -141,6 +193,35 @@ class ContactsScreen extends StatelessWidget {
               );
             },
             child: Text(lang.translate('upgrade_to_premium')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfo(BuildContext context, LanguageProvider lang, int limit) {
+    final contacts = context.read<ContactProvider>().contacts;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Информация'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Всего контактов: ${contacts.length}'),
+            Text('Лимит: $limit'),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'Основной контакт будет получать уведомления первым.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ОК'),
           ),
         ],
       ),

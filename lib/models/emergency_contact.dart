@@ -1,57 +1,89 @@
+/// Модель экстренного контакта
 class EmergencyContact {
-  final String id;
-  final String userId;
+  final int id;
   final String name;
   final String phoneNumber;
   final String? email;
+  final String? relation;
   final bool isPrimary;
+  final bool isActive;
+  final Map<String, dynamic> notificationPreferences;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   EmergencyContact({
     required this.id,
-    required this.userId,
     required this.name,
     required this.phoneNumber,
     this.email,
+    this.relation,
     this.isPrimary = false,
+    this.isActive = true,
+    this.notificationPreferences = const {},
     required this.createdAt,
+    required this.updatedAt,
   });
 
-  factory EmergencyContact.fromJson(Map<String, dynamic> json) => EmergencyContact(
-    id: json['id'] as String,
-    userId: json['userId'] as String,
-    name: json['name'] as String,
-    phoneNumber: json['phoneNumber'] as String,
-    email: json['email'] as String?,
-    isPrimary: json['isPrimary'] as bool? ?? false,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-  );
+  /// Создание из JSON (от сервера)
+  factory EmergencyContact.fromJson(Map<String, dynamic> json) => 
+    EmergencyContact(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      phoneNumber: json['phone_number'] as String,
+      email: json['email'] as String?,
+      relation: json['relation'] as String?,
+      isPrimary: json['is_primary'] as bool? ?? false,
+      isActive: json['is_active'] as bool? ?? true,
+      notificationPreferences: (json['notification_preferences'] as Map<String, dynamic>?) ?? {},
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
 
+  /// Конвертация в JSON (для отправки на сервер)
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'userId': userId,
     'name': name,
-    'phoneNumber': phoneNumber,
+    'phone_number': phoneNumber,
     'email': email,
-    'isPrimary': isPrimary,
-    'createdAt': createdAt.toIso8601String(),
+    'relation': relation,
+    'is_primary': isPrimary,
+    'notification_preferences': notificationPreferences,
   };
 
+  /// Создание копии с измененными полями
   EmergencyContact copyWith({
-    String? id,
-    String? userId,
+    int? id,
     String? name,
     String? phoneNumber,
     String? email,
+    String? relation,
     bool? isPrimary,
+    bool? isActive,
+    Map<String, dynamic>? notificationPreferences,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) => EmergencyContact(
     id: id ?? this.id,
-    userId: userId ?? this.userId,
     name: name ?? this.name,
     phoneNumber: phoneNumber ?? this.phoneNumber,
     email: email ?? this.email,
+    relation: relation ?? this.relation,
     isPrimary: isPrimary ?? this.isPrimary,
+    isActive: isActive ?? this.isActive,
+    notificationPreferences: notificationPreferences ?? this.notificationPreferences,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
+
+  @override
+  String toString() => 'EmergencyContact(id: $id, name: $name, phone: $phoneNumber)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EmergencyContact &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

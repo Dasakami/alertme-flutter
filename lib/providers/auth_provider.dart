@@ -7,7 +7,7 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  User? get currentUser => _authService.currentUser;
+  UserModel? get currentUser => _authService.currentUser;
   bool get isAuthenticated => _authService.isAuthenticated;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -36,13 +36,14 @@ class AuthProvider with ChangeNotifier {
         email: email,
         language: language,
       );
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
-      return false;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
     }
   }
 
@@ -53,14 +54,14 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final ok = await _authService.login(phoneNumber: phoneNumber, password: password);
-      if (ok) notifyListeners();
+      _isLoading = false;
+      notifyListeners();
       return ok;
     } catch (e) {
       _error = e.toString();
-      return false;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
     }
   }
 
@@ -70,13 +71,15 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      return await _authService.sendOTP(phoneNumber);
-    } catch (e) {
-      _error = e.toString();
-      return false;
-    } finally {
+      final ok = await _authService.sendOTP(phoneNumber);
       _isLoading = false;
       notifyListeners();
+      return ok;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -87,21 +90,35 @@ class AuthProvider with ChangeNotifier {
 
     try {
       final ok = await _authService.verifyOTP(phoneNumber, otp);
-      if (!ok) _error = 'Неверный код';
-      if (ok) notifyListeners();
+      _isLoading = false;
+      notifyListeners();
       return ok;
     } catch (e) {
       _error = e.toString();
-      return false;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> updateUser(User user) async {
-    await _authService.updateUser(user);
-    notifyListeners();
+  Future<void> updateProfile({
+    String? email,
+    String? firstName,
+    String? lastName,
+    String? language,
+  }) async {
+    try {
+      await _authService.updateProfile(
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        language: language,
+      );
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 
   Future<void> logout() async {

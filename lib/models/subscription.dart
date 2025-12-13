@@ -1,10 +1,10 @@
 class SubscriptionPlan {
   final int id;
   final String name;
-  final String planType; // free | premium | etc.
+  final String planType; // free, premium, etc
   final String? description;
-  final num priceMonthly;
-  final num priceYearly;
+  final double priceMonthly;
+  final double priceYearly;
   final List<String> features;
   final int? maxContacts;
   final bool geozonesEnabled;
@@ -23,38 +23,34 @@ class SubscriptionPlan {
     this.locationHistoryEnabled = false,
   });
 
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) => SubscriptionPlan(
-        id: (json['id'] as num).toInt(),
-        name: json['name'] as String,
-        planType: json['plan_type'] as String,
-        description: json['description'] as String?,
-        priceMonthly: json['price_monthly'] as num? ?? 0,
-        priceYearly: json['price_yearly'] as num? ?? 0,
-        features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? const [],
-        maxContacts: (json['max_contacts'] as num?)?.toInt(),
-        geozonesEnabled: json['geozones_enabled'] as bool? ?? false,
-        locationHistoryEnabled: json['location_history_enabled'] as bool? ?? false,
-      );
+  /// Бесплатный ли план
+  bool get isFree => planType == 'free' || priceMonthly == 0;
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'plan_type': planType,
-        'description': description,
-        'price_monthly': priceMonthly,
-        'price_yearly': priceYearly,
-        'features': features,
-        'max_contacts': maxContacts,
-        'geozones_enabled': geozonesEnabled,
-        'location_history_enabled': locationHistoryEnabled,
-      };
+  /// Создание из JSON
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) => 
+    SubscriptionPlan(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      planType: json['plan_type'] as String,
+      description: json['description'] as String?,
+      priceMonthly: (json['price_monthly'] as num?)?.toDouble() ?? 0,
+      priceYearly: (json['price_yearly'] as num?)?.toDouble() ?? 0,
+      features: (json['features'] as List?)?.cast<String>() ?? [],
+      maxContacts: json['max_contacts'] as int?,
+      geozonesEnabled: json['geozones_enabled'] as bool? ?? false,
+      locationHistoryEnabled: json['location_history_enabled'] as bool? ?? false,
+    );
+
+  @override
+  String toString() => 'SubscriptionPlan(id: $id, name: $name, type: $planType)';
 }
 
+/// Модель подписки пользователя
 class UserSubscription {
   final int id;
   final SubscriptionPlan plan;
-  final String status; // active | inactive | canceled
-  final String paymentPeriod; // monthly | yearly
+  final String status; // active, inactive, canceled, expired
+  final String paymentPeriod; // monthly, yearly
   final DateTime startDate;
   final DateTime endDate;
   final bool autoRenew;
@@ -77,42 +73,37 @@ class UserSubscription {
     required this.updatedAt,
   });
 
-  factory UserSubscription.fromJson(Map<String, dynamic> json) => UserSubscription(
-        id: (json['id'] as num).toInt(),
-        plan: SubscriptionPlan.fromJson(json['plan'] as Map<String, dynamic>),
-        status: json['status'] as String,
-        paymentPeriod: json['payment_period'] as String,
-        startDate: DateTime.parse(json['start_date'] as String),
-        endDate: DateTime.parse(json['end_date'] as String),
-        autoRenew: json['auto_renew'] as bool? ?? true,
-        daysRemaining: (json['days_remaining'] as num?)?.toInt() ?? 0,
-        isActive: json['is_active'] as bool? ?? false,
-        createdAt: DateTime.parse(json['created_at'] as String),
-        updatedAt: DateTime.parse(json['updated_at'] as String),
-      );
+  /// Истекла ли подписка
+  bool get isExpired => DateTime.now().isAfter(endDate);
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'plan': plan.toJson(),
-        'status': status,
-        'payment_period': paymentPeriod,
-        'start_date': startDate.toIso8601String(),
-        'end_date': endDate.toIso8601String(),
-        'auto_renew': autoRenew,
-        'days_remaining': daysRemaining,
-        'is_active': isActive,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
-      };
+  /// Создание из JSON
+  factory UserSubscription.fromJson(Map<String, dynamic> json) => 
+    UserSubscription(
+      id: json['id'] as int,
+      plan: SubscriptionPlan.fromJson(json['plan'] as Map<String, dynamic>),
+      status: json['status'] as String,
+      paymentPeriod: json['payment_period'] as String,
+      startDate: DateTime.parse(json['start_date'] as String),
+      endDate: DateTime.parse(json['end_date'] as String),
+      autoRenew: json['auto_renew'] as bool? ?? true,
+      daysRemaining: json['days_remaining'] as int? ?? 0,
+      isActive: json['is_active'] as bool? ?? false,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+
+  @override
+  String toString() => 'UserSubscription(plan: ${plan.name}, status: $status)';
 }
 
+/// Модель платежа
 class PaymentTransaction {
   final int id;
-  final num amount;
+  final double amount;
   final String currency;
   final String paymentMethod;
   final String transactionId;
-  final String status; // pending | completed | failed
+  final String status; // pending, completed, failed
   final DateTime createdAt;
   final DateTime? completedAt;
 
@@ -127,25 +118,17 @@ class PaymentTransaction {
     this.completedAt,
   });
 
-  factory PaymentTransaction.fromJson(Map<String, dynamic> json) => PaymentTransaction(
-        id: (json['id'] as num).toInt(),
-        amount: json['amount'] as num? ?? 0,
-        currency: json['currency'] as String? ?? 'KGS',
-        paymentMethod: json['payment_method'] as String? ?? 'card',
-        transactionId: json['transaction_id'] as String? ?? '',
-        status: json['status'] as String? ?? 'pending',
-        createdAt: DateTime.parse(json['created_at'] as String),
-        completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'amount': amount,
-        'currency': currency,
-        'payment_method': paymentMethod,
-        'transaction_id': transactionId,
-        'status': status,
-        'created_at': createdAt.toIso8601String(),
-        'completed_at': completedAt?.toIso8601String(),
-      };
+  factory PaymentTransaction.fromJson(Map<String, dynamic> json) => 
+    PaymentTransaction(
+      id: json['id'] as int,
+      amount: (json['amount'] as num).toDouble(),
+      currency: json['currency'] as String? ?? 'KGS',
+      paymentMethod: json['payment_method'] as String? ?? 'card',
+      transactionId: json['transaction_id'] as String? ?? '',
+      status: json['status'] as String? ?? 'pending',
+      createdAt: DateTime.parse(json['created_at'] as String),
+      completedAt: json['completed_at'] != null 
+          ? DateTime.parse(json['completed_at'] as String) 
+          : null,
+    );
 }

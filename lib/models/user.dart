@@ -1,68 +1,97 @@
-class User {
-  final String id;
+/// Модель пользователя приложения
+class UserModel {
+  final int id;
   final String phoneNumber;
   final String? email;
-  final String name;
-  final String preferredLanguage;
-  final SubscriptionTier subscriptionTier;
+  final String? firstName;
+  final String? lastName;
+  final String? avatar;
+  final String language;
+  final bool isPhoneVerified;
   final DateTime createdAt;
-  final DateTime updatedAt;
 
-  User({
+  UserModel({
     required this.id,
     required this.phoneNumber,
     this.email,
-    required this.name,
-    this.preferredLanguage = 'ru',
-    this.subscriptionTier = SubscriptionTier.free,
+    this.firstName,
+    this.lastName,
+    this.avatar,
+    this.language = 'ru',
+    this.isPhoneVerified = false,
     required this.createdAt,
-    required this.updatedAt,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => User(
-    id: json['id'] as String,
-    phoneNumber: json['phoneNumber'] as String,
+  /// Полное имя пользователя
+  String get name {
+    if (firstName != null && lastName != null) {
+      return '$firstName $lastName';
+    }
+    if (firstName != null) {
+      return firstName!;
+    }
+    return phoneNumber;
+  }
+
+  /// Создание из JSON (от сервера)
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+    id: json['id'] as int,
+    phoneNumber: json['phone_number'] as String,
     email: json['email'] as String?,
-    name: json['name'] as String,
-    preferredLanguage: json['preferredLanguage'] as String? ?? 'ru',
-    subscriptionTier: SubscriptionTier.values.firstWhere(
-      (e) => e.toString() == 'SubscriptionTier.${json['subscriptionTier']}',
-      orElse: () => SubscriptionTier.free,
-    ),
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    firstName: json['first_name'] as String?,
+    lastName: json['last_name'] as String?,
+    avatar: json['avatar'] as String?,
+    language: json['language'] as String? ?? 'ru',
+    isPhoneVerified: json['is_phone_verified'] as bool? ?? false,
+    createdAt: DateTime.parse(json['created_at'] as String),
   );
 
+  /// Конвертация в JSON (для отправки на сервер)
   Map<String, dynamic> toJson() => {
     'id': id,
-    'phoneNumber': phoneNumber,
+    'phone_number': phoneNumber,
     'email': email,
-    'name': name,
-    'preferredLanguage': preferredLanguage,
-    'subscriptionTier': subscriptionTier.name,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
+    'first_name': firstName,
+    'last_name': lastName,
+    'avatar': avatar,
+    'language': language,
+    'is_phone_verified': isPhoneVerified,
+    'created_at': createdAt.toIso8601String(),
   };
 
-  User copyWith({
-    String? id,
+  /// Создание копии с измененными полями
+  UserModel copyWith({
+    int? id,
     String? phoneNumber,
     String? email,
-    String? name,
-    String? preferredLanguage,
-    SubscriptionTier? subscriptionTier,
+    String? firstName,
+    String? lastName,
+    String? avatar,
+    String? language,
+    bool? isPhoneVerified,
     DateTime? createdAt,
-    DateTime? updatedAt,
-  }) => User(
+  }) => UserModel(
     id: id ?? this.id,
     phoneNumber: phoneNumber ?? this.phoneNumber,
     email: email ?? this.email,
-    name: name ?? this.name,
-    preferredLanguage: preferredLanguage ?? this.preferredLanguage,
-    subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+    firstName: firstName ?? this.firstName,
+    lastName: lastName ?? this.lastName,
+    avatar: avatar ?? this.avatar,
+    language: language ?? this.language,
+    isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
     createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
   );
-}
 
-enum SubscriptionTier { free, premium }
+  @override
+  String toString() => 'User(id: $id, phone: $phoneNumber, name: $name)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+}

@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscure = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -28,11 +28,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     final auth = context.read<AuthProvider>();
     final phone = _phoneController.text.trim();
     final password = _passwordController.text;
+
     final ok = await auth.login(phoneNumber: phone, password: password);
+
     if (!mounted) return;
+
     if (ok) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -40,7 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Ошибка входа'), backgroundColor: AppColors.sosRed),
+        SnackBar(
+          content: Text(auth.error ?? 'Ошибка входа'),
+          backgroundColor: AppColors.sosRed,
+        ),
       );
     }
   }
@@ -51,57 +58,124 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: Text(lang.translate('sign_in'))),
+      appBar: AppBar(
+        title: Text(lang.translate('sign_in')),
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.paddingXl,
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: AppSpacing.lg),
-                Text(lang.translate('welcome_back'), style: context.textStyles.displaySmall?.semiBold),
                 const SizedBox(height: AppSpacing.xl),
+                
+                // Логотип/иконка
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.deepBlue.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.shield_outlined,
+                    size: 48,
+                    color: AppColors.deepBlue,
+                  ),
+                ),
+                
+                const SizedBox(height: AppSpacing.xl),
+                
+                Text(
+                  lang.translate('welcome_back'),
+                  style: context.textStyles.displaySmall?.semiBold,
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                // Поле телефона
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(hintText: '+996555123456', labelText: 'Phone'),
+                  decoration: InputDecoration(
+                    labelText: lang.translate('phone_number'),
+                    hintText: '+996555123456',
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
                   keyboardType: TextInputType.phone,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Введите номер' : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Введите номер телефона';
+                    }
+                    if (!v.startsWith('+')) {
+                      return 'Номер должен начинаться с +';
+                    }
+                    return null;
+                  },
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+                
+                // Поле пароля
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    hintText: '••••••••',
                     labelText: lang.translate('password'),
+                    hintText: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  obscureText: _obscure,
-                  validator: (v) => (v == null || v.isEmpty) ? 'Введите пароль' : null,
+                  obscureText: _obscurePassword,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return 'Введите пароль';
+                    }
+                    return null;
+                  },
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                // Кнопка входа
                 SizedBox(
-                  width: double.infinity,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: auth.isLoading ? null : _submit,
                     child: auth.isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : Text(lang.translate('sign_in')),
                   ),
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+                
+                // Кнопка регистрации
                 Center(
                   child: TextButton(
                     onPressed: auth.isLoading
                         ? null
-                        : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                            ),
                     child: Text(lang.translate('create_account')),
                   ),
-                )
+                ),
               ],
             ),
           ),

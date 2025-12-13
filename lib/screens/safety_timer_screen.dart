@@ -7,6 +7,7 @@ import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/sos_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/services/timer_service.dart';
+import 'package:alertme/services/location_service.dart'; // ДОБАВЛЕНО
 import 'package:alertme/screens/sos_active_screen.dart';
 
 class SafetyTimerScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class SafetyTimerScreen extends StatefulWidget {
 
 class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   final TimerService _timerService = TimerService();
+  final LocationService _locationService = LocationService(); // ДОБАВЛЕНО
   int _selectedMinutes = 30;
   Timer? _countdownTimer;
 
@@ -36,7 +38,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   Future<void> _loadTimer() async {
     final authProvider = context.read<AuthProvider>();
     if (authProvider.currentUser != null) {
-      await _timerService.loadTimer(authProvider.currentUser!.id);
+      await _timerService.loadTimer(authProvider.currentUser!.id.toString()); // ИСПРАВЛЕНО: добавлен .toString()
       if (_timerService.hasActiveTimer) {
         _startCountdown();
       }
@@ -57,21 +59,38 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     });
   }
 
-  void _onTimerExpired() async {
-    final authProvider = context.read<AuthProvider>();
+  Future<void> _onTimerExpired() async {
     final contactProvider = context.read<ContactProvider>();
     final sosProvider = context.read<SOSProvider>();
 
-    if (authProvider.currentUser == null || contactProvider.contacts.isEmpty) return;
+    if (contactProvider.contacts.isEmpty) return;
 
     await _timerService.completeTimer();
     
-    final event = await sosProvider.triggerSOS(
-      authProvider.currentUser!.id,
-      contactProvider.contacts,
+    // ИСПРАВЛЕНО: получаем местоположение и передаем параметры
+    final location = await _locationService.getCurrentLocation();
+    
+    if (location == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Не удалось определить местоположение'),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+      }
+      return;
+    }
+
+    final alert = await sosProvider.triggerSOS(
+      latitude: location.latitude,
+      longitude: location.longitude,
+      address: location.address,
+      activationMethod: 'timer',
+      notes: 'Таймер безопасности истек',
     );
 
-    if (event != null && mounted) {
+    if (alert != null && mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
       );
@@ -83,7 +102,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     if (authProvider.currentUser == null) return;
 
     await _timerService.startTimer(
-      authProvider.currentUser!.id,
+      authProvider.currentUser!.id.toString(), // ИСПРАВЛЕНО: добавлен .toString()
       Duration(minutes: _selectedMinutes),
     );
     

@@ -13,6 +13,8 @@ class MiniMap extends StatefulWidget {
 class _MiniMapState extends State<MiniMap> {
   final LocationService _locationService = LocationService();
   String _locationText = 'Определение местоположения...';
+  double? _lat;
+  double? _lon;
 
   @override
   void initState() {
@@ -25,14 +27,15 @@ class _MiniMapState extends State<MiniMap> {
     if (mounted) {
       setState(() {
         _locationText = location?.address ?? 'Местоположение не определено';
+        _lat = location?.latitude;
+        _lon = location?.longitude;
       });
     }
   }
 
   Future<void> _openInMaps() async {
-    final location = await _locationService.getCurrentLocation();
-    if (location != null) {
-      final url = Uri.parse(location.mapUrl);
+    if (_lat != null && _lon != null) {
+      final url = Uri.parse('https://go.2gis.com/show_point?lat=$_lat&lon=$_lon');
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       }

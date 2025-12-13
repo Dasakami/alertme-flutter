@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
-import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/models/emergency_contact.dart';
@@ -19,40 +18,60 @@ class _AddContactScreenState extends State<AddContactScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _relationController = TextEditingController();
+  bool _isPrimary = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _relationController.dispose();
     super.dispose();
   }
 
-  void _saveContact() async {
+  Future<void> _saveContact() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.currentUser == null) return;
-
+    // Создаем временный объект для отправки
     final contact = EmergencyContact(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: authProvider.currentUser!.id,
+      id: 0, // ID будет присвоен сервером
       name: _nameController.text,
       phoneNumber: '+996${_phoneController.text}',
       email: _emailController.text.isEmpty ? null : _emailController.text,
+      relation: _relationController.text.isEmpty ? null : _relationController.text,
+      isPrimary: _isPrimary,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
-    await context.read<ContactProvider>().addContact(contact);
+    final contactProvider = context.read<ContactProvider>();
+    final ok = await contactProvider.addContact(contact);
 
-    if (mounted) {
+    if (!mounted) return;
+
+    if (ok) {
       Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Контакт добавлен'),
+          backgroundColor: AppColors.softCyan,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(contactProvider.error ?? 'Ошибка добавления'),
+          backgroundColor: AppColors.sosRed,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
+    final contactProvider = Provider.of<ContactProvider>(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(lang.translate('add_contact'))),
@@ -61,8 +80,9 @@ class _AddContactScreenState extends State<AddContactScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Имя
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -77,7 +97,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   return null;
                 },
               ),
+              
               const SizedBox(height: AppSpacing.lg),
+              
+              // Телефон
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -117,7 +140,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   ),
                 ],
               ),
+              
               const SizedBox(height: AppSpacing.lg),
+              
+              // Email
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -127,12 +153,47 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),
+              
+              const SizedBox(height: AppSpacing.lg),
+              
+              // Отношение
+              TextFormField(
+                controller: _relationController,
+                decoration: const InputDecoration(
+                  labelText: 'Отношение (необязательно)',
+                  hintText: 'Друг, Родственник, Коллега',
+                  prefixIcon: Icon(Icons.favorite_outline),
+                ),
+              ),
+              
+              const SizedBox(height: AppSpacing.lg),
+              
+              // Основной контакт
+              CheckboxListTile(
+                value: _isPrimary,
+                onChanged: (value) => setState(() => _isPrimary = value ?? false),
+                title: const Text('Основной контакт'),
+                subtitle: const Text('Будет получать уведомления первым'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              
               const SizedBox(height: AppSpacing.xl),
+              
+              // Кнопка сохранения
               SizedBox(
-                width: double.infinity,
+                height: 56,
                 child: ElevatedButton(
-                  onPressed: _saveContact,
-                  child: Text(lang.translate('save')),
+                  onPressed: contactProvider.isLoading ? null : _saveContact,
+                  child: contactProvider.isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(lang.translate('save')),
                 ),
               ),
             ],

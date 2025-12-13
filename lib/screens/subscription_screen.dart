@@ -4,7 +4,7 @@ import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/models/user.dart';
-
+import 'package:alertme/providers/subscription_provider.dart';
 class SubscriptionScreen extends StatelessWidget {
   const SubscriptionScreen({super.key});
 
@@ -100,11 +100,10 @@ class SubscriptionScreen extends StatelessWidget {
     );
   }
 
-  void _upgradeToPremium(BuildContext context, LanguageProvider lang) async {
-    final authProvider = context.read<AuthProvider>();
-    final user = authProvider.currentUser;
+  // УДАЛИТЬ весь метод _upgradeToPremium и ЗАМЕНИТЬ на:
 
-    if (user == null) return;
+  void _upgradeToPremium(BuildContext context, LanguageProvider lang) async {
+    final subscriptionProvider = context.read<SubscriptionProvider>();
 
     showDialog(
       context: context,
@@ -113,13 +112,7 @@ class SubscriptionScreen extends StatelessWidget {
     );
 
     await Future.delayed(const Duration(seconds: 2));
-
-    final updatedUser = user.copyWith(
-      subscriptionTier: SubscriptionTier.premium,
-      updatedAt: DateTime.now(),
-    );
-
-    await authProvider.updateUser(updatedUser);
+    await subscriptionProvider.loadCurrentSubscription();
 
     if (context.mounted) {
       Navigator.pop(context);
@@ -127,8 +120,9 @@ class SubscriptionScreen extends StatelessWidget {
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Добро пожаловать в Premium!'),
+          content: Text('Подписка оформлена! Перезапустите приложение.'),
           backgroundColor: AppColors.softCyan,
+          duration: Duration(seconds: 3),
         ),
       );
     }

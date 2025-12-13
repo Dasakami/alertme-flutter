@@ -32,13 +32,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     final auth = context.read<AuthProvider>();
     final lang = context.read<LanguageProvider>();
+    
     final phone = _phoneController.text.trim();
-    final email = _emailController.text.trim().isEmpty ? null : _emailController.text.trim();
+    final email = _emailController.text.trim().isEmpty 
+        ? null 
+        : _emailController.text.trim();
     final pass = _passwordController.text;
     final pass2 = _password2Controller.text;
 
+    // Регистрация
     final ok = await auth.register(
       phoneNumber: phone,
       password: pass,
@@ -46,27 +51,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: email,
       language: lang.currentLanguage,
     );
+
     if (!mounted) return;
+
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Ошибка регистрации'), backgroundColor: AppColors.sosRed),
+        SnackBar(
+          content: Text(auth.error ?? 'Ошибка регистрации'),
+          backgroundColor: AppColors.sosRed,
+        ),
       );
       return;
     }
 
-    // Send SMS
+    // Отправка SMS
     final sent = await auth.sendOTP(phone);
     if (!mounted) return;
+
     if (!sent) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error ?? 'Не удалось отправить SMS'), backgroundColor: AppColors.sosRed),
+        SnackBar(
+          content: Text(auth.error ?? 'Не удалось отправить SMS'),
+          backgroundColor: AppColors.sosRed,
+        ),
       );
       return;
     }
 
-    Navigator.of(context).push(
+    // Переход на экран подтверждения
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => OTPVerificationScreen(phoneNumber: phone, postVerifyPassword: pass),
+        builder: (_) => OTPVerificationScreen(
+          phoneNumber: phone,
+          postVerifyPassword: pass,
+        ),
       ),
     );
   }
@@ -84,58 +102,118 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.lg),
-                Text(lang.translate('create_account'), style: context.textStyles.displaySmall?.semiBold),
-                const SizedBox(height: AppSpacing.xl),
+                
+                Text(
+                  lang.translate('create_account'),
+                  style: context.textStyles.displaySmall?.semiBold,
+                ),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                // Телефон
                 TextFormField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(hintText: '+996555123456', labelText: 'Phone'),
+                  decoration: InputDecoration(
+                    labelText: lang.translate('phone_number'),
+                    hintText: '+996555123456',
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
                   keyboardType: TextInputType.phone,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Введите номер' : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Введите номер телефона';
+                    }
+                    if (!v.startsWith('+')) {
+                      return 'Номер должен начинаться с +';
+                    }
+                    return null;
+                  },
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+                
+                // Email (опционально)
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(hintText: 'you@email.com', labelText: 'Email (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Email (необязательно)',
+                    hintText: 'your@email.com',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+                
+                // Пароль
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    hintText: '••••••••',
                     labelText: lang.translate('password'),
+                    hintText: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure1 ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
+                      icon: Icon(
+                        _obscure1 ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.textSecondary,
+                      ),
                       onPressed: () => setState(() => _obscure1 = !_obscure1),
                     ),
                   ),
                   obscureText: _obscure1,
-                  validator: (v) => (v == null || v.length < 6) ? 'Минимум 6 символов' : null,
+                  validator: (v) {
+                    if (v == null || v.length < 6) {
+                      return 'Минимум 6 символов';
+                    }
+                    return null;
+                  },
                 ),
+                
                 const SizedBox(height: AppSpacing.md),
+                
+                // Подтверждение пароля
                 TextFormField(
                   controller: _password2Controller,
                   decoration: InputDecoration(
-                    hintText: '••••••••',
                     labelText: lang.translate('confirm_password'),
+                    hintText: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure2 ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
+                      icon: Icon(
+                        _obscure2 ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.textSecondary,
+                      ),
                       onPressed: () => setState(() => _obscure2 = !_obscure2),
                     ),
                   ),
                   obscureText: _obscure2,
-                  validator: (v) => (v != _passwordController.text) ? 'Пароли не совпадают' : null,
+                  validator: (v) {
+                    if (v != _passwordController.text) {
+                      return 'Пароли не совпадают';
+                    }
+                    return null;
+                  },
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                // Кнопка регистрации
                 SizedBox(
-                  width: double.infinity,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: auth.isLoading ? null : _submit,
                     child: auth.isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : Text(lang.translate('continue')),
                   ),
                 ),
