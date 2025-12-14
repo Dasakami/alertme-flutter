@@ -50,15 +50,6 @@ class AuthService {
     }
   }
 
-  String _normalizePhone(String phone) {
-    return phone
-        .replaceAll('+', '')
-        .replaceAll(' ', '')
-        .replaceAll('-', '')
-        .replaceAll('(', '')
-        .replaceAll(')', '');
-  }
-
   Future<void> register({
     required String phoneNumber,
     required String password,
@@ -92,38 +83,28 @@ class AuthService {
     try {
       final data = await _api.postJson('/auth/register/', body: body, auth: false);
       
-      if (data['tokens'] != null) {
-        final tokens = data['tokens'] as Map<String, dynamic>;
-        await _storage.saveTokens(
-          tokens['access'] as String,
-          tokens['refresh'] as String,
-        );
-        
-        if (data['user'] != null) {
-          final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-          await _storage.saveJson(_storage.userKey, user.toJson());
-          _currentUser = user;
-        }
-      }
-      
+      // Регистрация прошла, но нужно подтвердить номер
       debugPrint('✅ Регистрация успешна: $phoneNumber');
+      debugPrint('⚠️ Требуется подтверждение номера');
     } catch (e) {
       debugPrint('❌ Ошибка регистрации: $e');
       rethrow;
     }
   }
 
-  Future<bool> sendOTP(String phoneNumber) async {
+  Future<Map<String, dynamic>> sendOTP(String phoneNumber) async {
     try {
-      await _api.postJson('/auth/send-sms/', body: {
+      final data = await _api.postJson('/auth/send-sms/', body: {
         'phone_number': phoneNumber,
       }, auth: false);
       
       debugPrint('✅ SMS код отправлен: $phoneNumber');
-      return true;
+      debugPrint('🔑 Тестовый код: ${data['code']}'); // ДЛЯ ТЕСТИРОВАНИЯ
+      
+      return data;
     } catch (e) {
       debugPrint('❌ Ошибка отправки SMS: $e');
-      return false;
+      rethrow;
     }
   }
 
@@ -157,32 +138,29 @@ class AuthService {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // ИСПРАВЛЕН МЕТОД LOGIN
+  // АВТОРИЗАЦИЯ ПО ТЕЛЕФОНУ (без username)
   // ═══════════════════════════════════════════════════════════════
   Future<bool> login({
     required String phoneNumber, 
     required String password
   }) async {
     try {
-      // Нормализуем номер (убираем +)
-      final normalizedPhone = _normalizePhone(phoneNumber);
-      
       debugPrint('🔐 Попытка входа...');
-      debugPrint('📱 Оригинальный номер: $phoneNumber');
-      debugPrint('📱 Нормализованный: $normalizedPhone');
+      debugPrint('📱 Номер: $phoneNumber');
       
-      // Django JWT ожидает username и password
+      // Отправляем phone_number и password
       final body = {
-        'username': normalizedPhone, // БЕЗ +
+        'phone_number': phoneNumber,
         'password': password,
       };
       
       debugPrint('📤 Отправляем: $body');
       
-      final data = await _api.postJson('/auth/token/', body: body, auth: false);
+      final data = await _api.postJson('/auth/login/', body: body, auth: false);
 
-      final access = data['access'] as String?;
-      final refresh = data['refresh'] as String?;
+      final tokens = data['tokens'] as Map<String, dynamic>?;
+      final access = tokens?['access'] as String?;
+      final refresh = tokens?['refresh'] as String?;
       
       if (access == null || refresh == null) {
         throw ApiException('Неверный ответ сервера');
@@ -192,25 +170,12 @@ class AuthService {
       await _storage.saveTokens(access, refresh);
       debugPrint('✅ Токены сохранены');
       
-      // Создаем временного пользователя
-      final now = DateTime.now();
-      final tempUser = UserModel(
-        id: 0, // Будет заменен после загрузки профиля
-        phoneNumber: phoneNumber,
-        language: 'ru',
-        isPhoneVerified: true,
-        createdAt: now,
-      );
-      
-      await _storage.saveJson(_storage.userKey, tempUser.toJson());
-      _currentUser = tempUser;
-      
-      // Пробуем загрузить полный профиль
-      try {
-        await loadUserProfile();
-      } catch (e) {
-        debugPrint('⚠️ Не удалось загрузить полный профиль: $e');
-        // Но продолжаем с временным пользователем
+      // Сохраняем пользователя
+      if (data['user'] != null) {
+        final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+        await _storage.saveJson(_storage.userKey, user.toJson());
+        _currentUser = user;
+        debugPrint('✅ Пользователь сохранен');
       }
       
       debugPrint('✅ Вход выполнен: $phoneNumber');

@@ -71,10 +71,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final ok = await _authService.sendOTP(phoneNumber);
+      await _authService.sendOTP(phoneNumber);
       _isLoading = false;
       notifyListeners();
-      return ok;
+      return true;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;

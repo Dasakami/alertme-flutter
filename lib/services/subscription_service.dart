@@ -22,15 +22,16 @@ class SubscriptionService {
     try {
       final data = await _api.getJson('/subscription-plans/', auth: false);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results = [];
+      
       if (data is List) {
         results = data as List<dynamic>;
-      } else if (data['results'] is List) {
-        results = data['results'] as List<dynamic>;
-      } else if (data['data'] is List) {
-        results = data['data'] as List<dynamic>;
-      } else {
-        results = [];
+      } else if (data is Map<String, dynamic>) {
+        if (data['results'] != null && data['results'] is List) {
+          results = data['results'] as List<dynamic>;
+        } else if (data['data'] != null && data['data'] is List) {
+          results = data['data'] as List<dynamic>;
+        }
       }
       
       _plans = results
@@ -48,11 +49,27 @@ class SubscriptionService {
   Future<void> loadCurrentSubscription() async {
     try {
       final data = await _api.getJson('/subscriptions/current/', auth: true);
-      _currentSubscription = UserSubscription.fromJson(data);
-      debugPrint('✅ Подписка загружена: ${_currentSubscription?.plan.name}');
+      
+      // ИСПРАВЛЕНИЕ: проверяем, что вернулся объект подписки
+      if (data['detail'] != null || data['plan'] == 'free') {
+        // Нет активной подписки
+        _currentSubscription = null;
+        debugPrint('ℹ️ Нет активной подписки (Free план)');
+        return;
+      }
+      
+      // ЗАЩИТА: Проверяем обязательные поля перед парсингом
+      if (data['id'] != null && data['plan'] != null) {
+        _currentSubscription = UserSubscription.fromJson(data);
+        debugPrint('✅ Подписка загружена: ${_currentSubscription?.plan.name}');
+      } else {
+        _currentSubscription = null;
+        debugPrint('⚠️ Неполные данные подписки');
+      }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки подписки: $e');
       _currentSubscription = null;
+      // НЕ пробрасываем ошибку дальше - это не критично
     }
   }
 
@@ -98,15 +115,16 @@ class SubscriptionService {
     try {
       final data = await _api.getJson('/payments/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results = [];
+      
       if (data is List) {
         results = data as List<dynamic>;
-      } else if (data['results'] is List) {
-        results = data['results'] as List<dynamic>;
-      } else if (data['data'] is List) {
-        results = data['data'] as List<dynamic>;
-      } else {
-        results = [];
+      } else if (data is Map<String, dynamic>) {
+        if (data['results'] != null && data['results'] is List) {
+          results = data['results'] as List<dynamic>;
+        } else if (data['data'] != null && data['data'] is List) {
+          results = data['data'] as List<dynamic>;
+        }
       }
       
       return results

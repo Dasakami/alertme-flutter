@@ -189,7 +189,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => SubscriptionScreen()),
               );
             },
             child: Text(lang.translate('upgrade_to_premium')),
