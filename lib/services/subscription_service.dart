@@ -50,15 +50,12 @@ class SubscriptionService {
     try {
       final data = await _api.getJson('/subscriptions/current/', auth: true);
       
-      // ИСПРАВЛЕНИЕ: проверяем, что вернулся объект подписки
       if (data['detail'] != null || data['plan'] == 'free') {
-        // Нет активной подписки
         _currentSubscription = null;
         debugPrint('ℹ️ Нет активной подписки (Free план)');
         return;
       }
       
-      // ЗАЩИТА: Проверяем обязательные поля перед парсингом
       if (data['id'] != null && data['plan'] != null) {
         _currentSubscription = UserSubscription.fromJson(data);
         debugPrint('✅ Подписка загружена: ${_currentSubscription?.plan.name}');
@@ -69,7 +66,45 @@ class SubscriptionService {
     } catch (e) {
       debugPrint('❌ Ошибка загрузки подписки: $e');
       _currentSubscription = null;
-      // НЕ пробрасываем ошибку дальше - это не критично
+    }
+  }
+
+  // НОВОЕ: Активация кода из Telegram
+  Future<bool> activateCode(String code) async {
+    try {
+      final data = await _api.postJson(
+        '/activation-codes/activate/',
+        body: {'code': code},
+        auth: true,
+      );
+      
+      if (data['success'] == true) {
+        // Перезагружаем текущую подписку
+        await loadCurrentSubscription();
+        debugPrint('✅ Код активирован успешно');
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('❌ Ошибка активации кода: $e');
+      rethrow;
+    }
+  }
+
+  // НОВОЕ: Проверка кода без активации
+  Future<Map<String, dynamic>?> checkCode(String code) async {
+    try {
+      final data = await _api.postJson(
+        '/activation-codes/check/',
+        body: {'code': code},
+        auth: true,
+      );
+      
+      return data;
+    } catch (e) {
+      debugPrint('❌ Ошибка проверки кода: $e');
+      return null;
     }
   }
 

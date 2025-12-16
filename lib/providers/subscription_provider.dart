@@ -39,6 +39,25 @@ class SubscriptionProvider with ChangeNotifier {
     }
   }
 
+  // НОВОЕ: Активация кода
+  Future<bool> activateCode(String code) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final success = await _service.activateCode(code);
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> subscribe({
     required int planId,
     required String paymentPeriod,

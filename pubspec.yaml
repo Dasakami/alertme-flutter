@@ -1,5 +1,5 @@
 name: alertme
-description: "Представляем Sentinel – ваш современный страж личной безопасности, который объединяет интуитивный дизайн и мгновенное реагирование для вашего спокойствия."
+description: "Представляем Sentinel – ваш современный страж личной безопасности"
 publish_to: "none"
 version: 1.0.0
 
@@ -16,10 +16,9 @@ dependencies:
   shared_preferences: ^2.0.0
   geolocator: 13.0.4
   permission_handler: ^12.0.0
-  url_launcher: ^6.0.0
+  url_launcher: ^6.0.0  # Для SMS, звонков, карт
   intl: 0.20.2
   smooth_page_indicator: ^1.0.0
-
 
 dev_dependencies:
   flutter_test:

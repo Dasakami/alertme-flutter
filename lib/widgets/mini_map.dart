@@ -33,11 +33,32 @@ class _MiniMapState extends State<MiniMap> {
     }
   }
 
-  Future<void> _openInMaps() async {
+  Future<void> _openInGoogleMaps() async {
     if (_lat != null && _lon != null) {
-      final url = Uri.parse('https://go.2gis.com/show_point?lat=$_lat&lon=$_lon');
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
+      // Google Maps URL схема
+      // Android/iOS: geo:latitude,longitude?q=latitude,longitude
+      // Web/Универсальная: https://www.google.com/maps/search/?api=1&query=lat,lon
+      
+      final Uri url;
+      
+      try {
+        // Пробуем открыть через приложение Google Maps
+        url = Uri.parse('geo:$_lat,$_lon?q=$_lat,$_lon');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (e) {
+        // Если не получилось, используем веб-версию
+      }
+      
+      // Fallback на веб-версию Google Maps
+      final webUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$_lat,$_lon'
+      );
+      
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
       }
     }
   }
@@ -46,7 +67,7 @@ class _MiniMapState extends State<MiniMap> {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: _openInMaps,
+        onTap: _openInGoogleMaps,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           height: 120,
@@ -88,7 +109,7 @@ class _MiniMapState extends State<MiniMap> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    'Открыть на карте',
+                    'Открыть в Google Maps',
                     style: context.textStyles.bodySmall?.withColor(AppColors.softCyan),
                   ),
                   const SizedBox(width: AppSpacing.xs),

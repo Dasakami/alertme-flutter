@@ -5,6 +5,7 @@ import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/home_screen.dart';
+import 'dart:async';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -23,6 +24,16 @@ class OTPVerificationScreen extends StatefulWidget {
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final List<TextEditingController> _controllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  
+  int _resendTimer = 60;
+  Timer? _timer;
+  bool _canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendTimer();
+  }
 
   @override
   void dispose() {
@@ -32,12 +43,72 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     for (var node in _focusNodes) {
       node.dispose();
     }
+    _timer?.cancel();
     super.dispose();
+  }
+
+  void _startResendTimer() {
+    _canResend = false;
+    _resendTimer = 60;
+    _timer?.cancel();
+    
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_resendTimer > 0) {
+            _resendTimer--;
+          } else {
+            _canResend = true;
+            timer.cancel();
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _resendCode() async {
+    if (!_canResend) return;
+    
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.sendOTP(widget.phoneNumber);
+    
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Код отправлен повторно'),
+            backgroundColor: AppColors.softCyan,
+          ),
+        );
+        _startResendTimer();
+        
+        // Очищаем поля
+        for (var controller in _controllers) {
+          controller.clear();
+        }
+        _focusNodes[0].requestFocus();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Ошибка отправки'),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _verifyOTP() async {
     final otp = _controllers.map((c) => c.text).join();
-    if (otp.length != 6) return;
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Введите полный код'),
+          backgroundColor: AppColors.sosRed,
+        ),
+      );
+      return;
+    }
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.verifyOTP(widget.phoneNumber, otp);
@@ -68,6 +139,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         (route) => false,
       );
     } else {
+      // Очищаем поля при ошибке
+      for (var controller in _controllers) {
+        controller.clear();
+      }
+      _focusNodes[0].requestFocus();
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.error ?? 'Неверный код'),
@@ -83,7 +160,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(leading: const BackButton()),
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text(lang.translate('verify_code')),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.paddingXl,
@@ -92,10 +172,19 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             children: [
               const SizedBox(height: AppSpacing.xl),
               
-              const Icon(
-                Icons.lock_outline,
-                size: 64,
-                color: AppColors.deepBlue,
+              // Иконка
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.deepBlue.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_outline,
+                  size: 48,
+                  color: AppColors.deepBlue,
+                ),
               ),
               
               const SizedBox(height: AppSpacing.xl),
@@ -109,7 +198,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               const SizedBox(height: AppSpacing.md),
               
               Text(
-                '${lang.translate('verification_sent')} ${widget.phoneNumber}',
+                '${lang.translate('verification_sent')}\n${widget.phoneNumber}',
                 style: context.textStyles.bodyLarge?.withColor(AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
@@ -121,6 +210,24 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) => _buildOTPField(index)),
               ),
+              
+              const SizedBox(height: AppSpacing.xl),
+              
+              // Таймер повторной отправки
+              if (!_canResend)
+                Center(
+                  child: Text(
+                    'Повторная отправка через $_resendTimer сек',
+                    style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                  ),
+                )
+              else
+                Center(
+                  child: TextButton(
+                    onPressed: _resendCode,
+                    child: const Text('Отправить код повторно'),
+                  ),
+                ),
               
               const SizedBox(height: AppSpacing.xxl),
               
@@ -141,6 +248,30 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                       : Text(lang.translate('verify')),
                 ),
               ),
+              
+              const SizedBox(height: AppSpacing.md),
+              
+              // Подсказка для теста
+              if (authProvider.error?.contains('Тестовый код') ?? false)
+                Container(
+                  padding: AppSpacing.paddingMd,
+                  decoration: BoxDecoration(
+                    color: AppColors.softCyan.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.softCyan),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppColors.softCyan),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        '🔑 Для теста используйте код: 123456',
+                        style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.deepBlue),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -159,9 +290,22 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         maxLength: 1,
         style: context.textStyles.headlineMedium?.semiBold,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           counterText: '',
-          contentPadding: EdgeInsets.symmetric(vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: BorderSide(
+              color: _controllers[index].text.isEmpty 
+                  ? AppColors.borderLight 
+                  : AppColors.deepBlue,
+              width: _controllers[index].text.isEmpty ? 1 : 2,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderSide: const BorderSide(color: AppColors.deepBlue, width: 2),
+          ),
         ),
         onChanged: (value) {
           if (value.isNotEmpty) {

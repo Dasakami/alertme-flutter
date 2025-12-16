@@ -64,7 +64,6 @@ class SOSEvent {
     notifiedContacts: notifiedContacts ?? this.notifiedContacts,
   );
 }
-
 class LocationData {
   final double latitude;
   final double longitude;
@@ -88,8 +87,7 @@ class LocationData {
     'address': address,
   };
 
-  // Use 2GIS deep link per backend serializers
-  String get mapUrl => 'https://go.2gis.com/show_point?lat=$latitude&lon=$longitude';
+  // ИЗМЕНЕНО: Используем Google Maps вместо 2GIS
+  String get mapUrl => 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
 }
-
 enum SOSStatus { active, cancelled, completed }
