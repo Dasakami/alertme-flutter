@@ -1,15 +1,14 @@
 import 'package:alertme/models/emergency_contact.dart';
 
-/// Модель геозоны
 class Geozone {
   final int id;
   final String name;
   final String? description;
-  final String zoneType; // safe, dangerous, custom
+  final String zoneType; 
   final double latitude;
   final double longitude;
-  final double radius; // в метрах
-  final List<List<double>>? polygonCoordinates; // [[lat, lng], ...]
+  final double radius; 
+  final List<List<double>>? polygonCoordinates; 
   final bool notifyOnEnter;
   final bool notifyOnExit;
   final bool isActive;
@@ -33,8 +32,6 @@ class Geozone {
     required this.createdAt,
     required this.updatedAt,
   });
-
-  /// Создание из JSON
   factory Geozone.fromJson(Map<String, dynamic> json) {
     List<List<double>>? parsePolygon(dynamic v) {
       if (v is List) {

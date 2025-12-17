@@ -87,6 +87,20 @@ class ContactCard extends StatelessWidget {
                       style: context.textStyles.bodySmall,
                     ),
                   ],
+                  // В методе build ContactCard после relation:
+if (contact.telegramUsername != null) ...[
+  const SizedBox(height: AppSpacing.xs),
+  Row(
+    children: [
+      const Icon(Icons.telegram, size: 14, color: AppColors.softCyan),
+      const SizedBox(width: 4),
+      Text(
+        '@${contact.telegramUsername}',
+        style: context.textStyles.bodySmall?.withColor(AppColors.softCyan),
+      ),
+    ],
+  ),
+],
                 ],
               ),
             ),

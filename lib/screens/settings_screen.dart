@@ -4,9 +4,10 @@ import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/subscription_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
-import 'package:alertme/models/user.dart'; // ДОБАВЛЕНО
+import 'package:alertme/models/user.dart'; 
 import 'package:alertme/screens/subscription_screen.dart';
 import 'package:alertme/screens/onboarding_screen.dart';
+import 'package:alertme/screens/profile_edit_screen.dart'; 
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -73,40 +74,72 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, UserModel user) { // ИСПРАВЛЕНО: User -> UserModel
-    return Card(
-      child: Padding(
-        padding: AppSpacing.paddingLg,
-        child: Row(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.deepBlue.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+  // В методе _buildProfileCard добавить кнопку редактирования:
+Widget _buildProfileCard(BuildContext context, UserModel user) {
+  return Card(
+    child: Padding(
+      padding: AppSpacing.paddingLg,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.deepBlue.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, size: 32, color: AppColors.deepBlue),
               ),
-              child: const Icon(Icons.person, size: 32, color: AppColors.deepBlue),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(user.name, style: context.textStyles.titleLarge?.semiBold),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    user.phoneNumber,
-                    style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
-                  ),
-                ],
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user.name, style: context.textStyles.titleLarge?.semiBold),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      user.phoneNumber,
+                      style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                    ),
+                    if (user.telegramUsername != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          const Icon(Icons.telegram, size: 14, color: AppColors.softCyan),
+                          const SizedBox(width: 4),
+                          Text(
+                            '@${user.telegramUsername}',
+                            style: context.textStyles.bodySmall?.withColor(AppColors.softCyan),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+                );
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('Редактировать профиль'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSettingsTile(
     BuildContext context, {

@@ -5,6 +5,7 @@ class UserModel {
   final String? email;
   final String? firstName;
   final String? lastName;
+  final String? telegramUsername; // НОВОЕ ПОЛЕ
   final String? avatar;
   final String language;
   final bool isPhoneVerified;
@@ -16,6 +17,7 @@ class UserModel {
     this.email,
     this.firstName,
     this.lastName,
+    this.telegramUsername, // НОВОЕ
     this.avatar,
     this.language = 'ru',
     this.isPhoneVerified = false,
@@ -40,6 +42,7 @@ class UserModel {
     email: json['email'] as String?,
     firstName: json['first_name'] as String?,
     lastName: json['last_name'] as String?,
+    telegramUsername: json['telegram_username'] as String?, // НОВОЕ
     avatar: json['avatar'] as String?,
     language: json['language'] as String? ?? 'ru',
     isPhoneVerified: json['is_phone_verified'] as bool? ?? false,
@@ -53,6 +56,7 @@ class UserModel {
     'email': email,
     'first_name': firstName,
     'last_name': lastName,
+    'telegram_username': telegramUsername, // НОВОЕ
     'avatar': avatar,
     'language': language,
     'is_phone_verified': isPhoneVerified,
@@ -66,6 +70,7 @@ class UserModel {
     String? email,
     String? firstName,
     String? lastName,
+    String? telegramUsername, // НОВОЕ
     String? avatar,
     String? language,
     bool? isPhoneVerified,
@@ -76,6 +81,7 @@ class UserModel {
     email: email ?? this.email,
     firstName: firstName ?? this.firstName,
     lastName: lastName ?? this.lastName,
+    telegramUsername: telegramUsername ?? this.telegramUsername, // НОВОЕ
     avatar: avatar ?? this.avatar,
     language: language ?? this.language,
     isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,

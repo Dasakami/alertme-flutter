@@ -187,30 +187,32 @@ class AuthService {
   }
 
   Future<void> updateProfile({
-    String? email,
-    String? firstName,
-    String? lastName,
-    String? language,
-  }) async {
-    try {
-      final body = <String, dynamic>{};
-      if (email != null) body['email'] = email;
-      if (firstName != null) body['first_name'] = firstName;
-      if (lastName != null) body['last_name'] = lastName;
-      if (language != null) body['language'] = language;
+  String? email,
+  String? firstName,
+  String? lastName,
+  String? telegramUsername, // ДОБАВИТЬ
+  String? language,
+}) async {
+  try {
+    final body = <String, dynamic>{};
+    if (email != null) body['email'] = email;
+    if (firstName != null) body['first_name'] = firstName;
+    if (lastName != null) body['last_name'] = lastName;
+    if (telegramUsername != null) body['telegram_username'] = telegramUsername; // ДОБАВИТЬ
+    if (language != null) body['language'] = language;
 
-      final data = await _api.patchJson('/users/me/', body: body, auth: true);
+    final data = await _api.patchJson('/users/me/update_profile/', body: body, auth: true); // ИСПРАВЛЕН URL
 
-      final user = UserModel.fromJson(data);
-      await _storage.saveJson(_storage.userKey, user.toJson());
-      _currentUser = user;
+    final user = UserModel.fromJson(data);
+    await _storage.saveJson(_storage.userKey, user.toJson());
+    _currentUser = user;
 
-      debugPrint('✅ Профиль обновлен на сервере');
-    } catch (e) {
-      debugPrint('❌ Ошибка обновления профиля: $e');
-      rethrow;
-    }
+    debugPrint('✅ Профиль обновлен на сервере');
+  } catch (e) {
+    debugPrint('❌ Ошибка обновления профиля: $e');
+    rethrow;
   }
+}
 
   Future<void> updateFCMToken(String fcmToken) async {
     try {

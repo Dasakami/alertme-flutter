@@ -102,24 +102,26 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> updateProfile({
-    String? email,
-    String? firstName,
-    String? lastName,
-    String? language,
-  }) async {
-    try {
-      await _authService.updateProfile(
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        language: language,
-      );
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+  String? email,
+  String? firstName,
+  String? lastName,
+  String? telegramUsername, // ДОБАВИТЬ
+  String? language,
+}) async {
+  try {
+    await _authService.updateProfile(
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      telegramUsername: telegramUsername, // ДОБАВИТЬ
+      language: language,
+    );
+    notifyListeners();
+  } catch (e) {
+    _error = e.toString();
+    notifyListeners();
   }
+}
 
   Future<void> logout() async {
     await _authService.logout();

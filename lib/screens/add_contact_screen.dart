@@ -19,6 +19,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _relationController = TextEditingController();
+  final _telegramController = TextEditingController(); // НОВОЕ
   bool _isPrimary = false;
 
   @override
@@ -27,6 +28,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _relationController.dispose();
+    _telegramController.dispose(); // НОВОЕ
     super.dispose();
   }
 
@@ -40,6 +42,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
       phoneNumber: '+996${_phoneController.text}',
       email: _emailController.text.isEmpty ? null : _emailController.text,
       relation: _relationController.text.isEmpty ? null : _relationController.text,
+      telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text, // НОВОЕ
       isPrimary: _isPrimary,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -143,6 +146,33 @@ class _AddContactScreenState extends State<AddContactScreen> {
               
               const SizedBox(height: AppSpacing.lg),
               
+              // НОВОЕ: Telegram Username
+              TextFormField(
+                controller: _telegramController,
+                decoration: InputDecoration(
+                  labelText: 'Telegram Username (необязательно)',
+                  hintText: 'username',
+                  helperText: 'Без @. Для SOS уведомлений',
+                  prefixIcon: const Icon(Icons.alternate_email),
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
+                ],
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (value.length < 5) {
+                      return 'Минимум 5 символов';
+                    }
+                    if (value.startsWith('@')) {
+                      return 'Не указывайте @';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              
+              const SizedBox(height: AppSpacing.lg),
+              
               // Email
               TextFormField(
                 controller: _emailController,
@@ -175,6 +205,30 @@ class _AddContactScreenState extends State<AddContactScreen> {
                 title: const Text('Основной контакт'),
                 subtitle: const Text('Будет получать уведомления первым'),
                 contentPadding: EdgeInsets.zero,
+              ),
+              
+              const SizedBox(height: AppSpacing.md),
+              
+              // Информация о Telegram
+              Container(
+                padding: AppSpacing.paddingMd,
+                decoration: BoxDecoration(
+                  color: AppColors.softCyan.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.softCyan),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.softCyan, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Если у контакта есть Telegram, SOS уведомления придут туда',
+                        style: context.textStyles.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               
               const SizedBox(height: AppSpacing.xl),
