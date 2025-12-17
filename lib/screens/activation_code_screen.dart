@@ -1,4 +1,4 @@
-// lib/screens/activation_code_screen.dart
+// lib/screens/activation_code_screen.dart - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +38,9 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       if (!mounted) return;
 
       if (success) {
+        // ✅ ОБНОВЛЯЕМ ПОДПИСКУ ПОСЛЕ АКТИВАЦИИ
+        await subscriptionProvider.loadCurrentSubscription();
+        
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

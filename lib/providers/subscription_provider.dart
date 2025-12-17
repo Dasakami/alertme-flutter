@@ -29,17 +29,20 @@ class SubscriptionProvider with ChangeNotifier {
     }
   }
 
+  /// ИСПРАВЛЕНО: Принудительное обновление подписки
   Future<void> loadCurrentSubscription() async {
     try {
       await _service.loadCurrentSubscription();
+      debugPrint('✅ Подписка обновлена: isPremium = $isPremium');
       notifyListeners();
     } catch (e) {
       _error = e.toString();
+      debugPrint('❌ Ошибка загрузки подписки: $e');
       notifyListeners();
     }
   }
 
-  // НОВОЕ: Активация кода
+  /// ИСПРАВЛЕНО: Активация кода с обновлением
   Future<bool> activateCode(String code) async {
     _isLoading = true;
     _error = null;
@@ -47,6 +50,13 @@ class SubscriptionProvider with ChangeNotifier {
 
     try {
       final success = await _service.activateCode(code);
+      
+      if (success) {
+        // ✅ ОБНОВЛЯЕМ ПОДПИСКУ ПОСЛЕ АКТИВАЦИИ
+        await loadCurrentSubscription();
+        debugPrint('✅ Код активирован, подписка обновлена');
+      }
+      
       _isLoading = false;
       notifyListeners();
       return success;
@@ -73,6 +83,10 @@ class SubscriptionProvider with ChangeNotifier {
         paymentPeriod: paymentPeriod,
         paymentMethod: paymentMethod,
       );
+      
+      // Обновляем подписку после оформления
+      await loadCurrentSubscription();
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -87,6 +101,10 @@ class SubscriptionProvider with ChangeNotifier {
   Future<bool> cancelSubscription() async {
     try {
       await _service.cancelSubscription();
+      
+      // Обновляем подписку после отмены
+      await loadCurrentSubscription();
+      
       notifyListeners();
       return true;
     } catch (e) {

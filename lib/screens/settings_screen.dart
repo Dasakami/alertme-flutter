@@ -9,8 +9,31 @@ import 'package:alertme/screens/subscription_screen.dart';
 import 'package:alertme/screens/onboarding_screen.dart';
 import 'package:alertme/screens/profile_edit_screen.dart'; 
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Загружаем подписку при открытии настроек
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshSubscription();
+    });
+  }
+
+  Future<void> _refreshSubscription() async {
+    try {
+      await context.read<SubscriptionProvider>().loadCurrentSubscription();
+      debugPrint('✅ Подписка обновлена в настройках');
+    } catch (e) {
+      debugPrint('❌ Ошибка обновления подписки: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,124 +45,185 @@ class SettingsScreen extends StatelessWidget {
     if (user == null) return const SizedBox();
 
     return Scaffold(
-      appBar: AppBar(title: Text(lang.translate('settings'))),
-      body: ListView(
-        padding: AppSpacing.paddingLg,
-        children: [
-          _buildProfileCard(context, user),
-          const SizedBox(height: AppSpacing.lg),
-          _buildSettingsTile(
-            context,
-            icon: Icons.language,
-            title: lang.translate('language'),
-            subtitle: lang.isRussian ? 'Русский' : 'Кыргызча',
-            onTap: () => _showLanguageDialog(context, lang),
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.workspace_premium,
-            title: lang.translate('subscription'),
-            subtitle: subscriptionProvider.isPremium // ИСПРАВЛЕНО
-              ? lang.translate('premium')
-              : lang.translate('free'),
-            trailing: !subscriptionProvider.isPremium // ИСПРАВЛЕНО
-              ? const Icon(Icons.arrow_forward_ios, size: 16)
-              : null,
-            onTap: () {
-              if (!subscriptionProvider.isPremium) { // ИСПРАВЛЕНО
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-                );
-              }
-            },
-          ),
-          _buildSettingsTile(
-            context,
-            icon: Icons.notifications_outlined,
-            title: lang.translate('notifications'),
-            subtitle: 'Включены',
-            onTap: () {},
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _buildSettingsTile(
-            context,
-            icon: Icons.logout,
-            title: lang.translate('logout'),
-            titleColor: AppColors.sosRed,
-            onTap: () => _logout(context, authProvider),
+      appBar: AppBar(
+        title: Text(lang.translate('settings')),
+        actions: [
+          // Кнопка обновления
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSubscription,
+            tooltip: 'Обновить',
           ),
         ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshSubscription,
+        child: ListView(
+          padding: AppSpacing.paddingLg,
+          children: [
+            _buildProfileCard(context, user),
+            const SizedBox(height: AppSpacing.lg),
+            
+            // Язык
+            _buildSettingsTile(
+              context,
+              icon: Icons.language,
+              title: lang.translate('language'),
+              subtitle: lang.isRussian ? 'Русский' : 'Кыргызча',
+              onTap: () => _showLanguageDialog(context, lang),
+            ),
+            
+            // Подписка - ИСПРАВЛЕНО
+            _buildSubscriptionTile(context, lang, subscriptionProvider),
+            
+            // Уведомления
+            _buildSettingsTile(
+              context,
+              icon: Icons.notifications_outlined,
+              title: lang.translate('notifications'),
+              subtitle: 'Включены',
+              onTap: () {},
+            ),
+            
+            const SizedBox(height: AppSpacing.lg),
+            
+            // Выход
+            _buildSettingsTile(
+              context,
+              icon: Icons.logout,
+              title: lang.translate('logout'),
+              titleColor: AppColors.sosRed,
+              onTap: () => _logout(context, authProvider),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // В методе _buildProfileCard добавить кнопку редактирования:
-Widget _buildProfileCard(BuildContext context, UserModel user) {
-  return Card(
-    child: Padding(
-      padding: AppSpacing.paddingLg,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.deepBlue.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, size: 32, color: AppColors.deepBlue),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.name, style: context.textStyles.titleLarge?.semiBold),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      user.phoneNumber,
-                      style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
-                    ),
-                    if (user.telegramUsername != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          const Icon(Icons.telegram, size: 14, color: AppColors.softCyan),
-                          const SizedBox(width: 4),
-                          Text(
-                            '@${user.telegramUsername}',
-                            style: context.textStyles.bodySmall?.withColor(AppColors.softCyan),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
-                );
-              },
-              icon: const Icon(Icons.edit),
-              label: const Text('Редактировать профиль'),
-            ),
-          ),
-        ],
+  /// ИСПРАВЛЕНО: Правильное отображение статуса подписки
+  Widget _buildSubscriptionTile(
+    BuildContext context,
+    LanguageProvider lang,
+    SubscriptionProvider provider,
+  ) {
+    // Обновляем подписку при построении
+    if (!provider.isLoading) {
+      Future.microtask(() => _refreshSubscription());
+    }
+
+    String subtitle;
+    Color? titleColor;
+    bool showArrow = false;
+
+    if (provider.isLoading) {
+      subtitle = 'Загрузка...';
+    } else if (provider.isPremium) {
+      subtitle = '${lang.translate('premium')} ✅';
+      titleColor = AppColors.softCyan;
+      
+      // Показываем дату окончания если есть
+      if (provider.currentSubscription != null) {
+        final endDate = provider.currentSubscription!.endDate;
+        subtitle += '\nДо ${endDate.day}.${endDate.month}.${endDate.year}';
+      }
+    } else {
+      subtitle = lang.translate('free');
+      showArrow = true;
+    }
+
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          Icons.workspace_premium,
+          color: provider.isPremium ? AppColors.softCyan : AppColors.deepBlue,
+        ),
+        title: Text(
+          lang.translate('subscription'),
+          style: context.textStyles.bodyLarge?.copyWith(color: titleColor),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+        ),
+        trailing: showArrow ? const Icon(Icons.arrow_forward_ios, size: 16) : null,
+        onTap: () {
+          if (!provider.isPremium) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+            ).then((_) => _refreshSubscription());
+          }
+        },
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildProfileCard(BuildContext context, UserModel user) {
+    return Card(
+      child: Padding(
+        padding: AppSpacing.paddingLg,
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.deepBlue.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person, size: 32, color: AppColors.deepBlue),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user.name, style: context.textStyles.titleLarge?.semiBold),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        user.phoneNumber,
+                        style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+                      ),
+                      if (user.telegramUsername != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Row(
+                          children: [
+                            const Icon(Icons.telegram, size: 14, color: AppColors.softCyan),
+                            const SizedBox(width: 4),
+                            Text(
+                              '@${user.telegramUsername}',
+                              style: context.textStyles.bodySmall?.withColor(AppColors.softCyan),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+                  );
+                },
+                icon: const Icon(Icons.edit),
+                label: const Text('Редактировать профиль'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSettingsTile(
     BuildContext context, {
