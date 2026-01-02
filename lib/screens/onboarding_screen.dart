@@ -4,6 +4,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/login_screen.dart';
+import 'package:alertme/screens/permissions_request_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -90,8 +91,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_currentPage == pages.length - 1) {
+                          // Переход на экран разрешений
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(builder: (_) => const PermissionsRequestScreen()),
                           );
                         } else {
                           _pageController.nextPage(

@@ -90,6 +90,8 @@ class NotificationService {
     return false;
   }
 
+  
+
   /// Генерация SOS сообщения
   String generateSOSMessage({
     required String userName,

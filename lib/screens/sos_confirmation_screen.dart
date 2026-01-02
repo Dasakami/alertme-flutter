@@ -6,10 +6,66 @@ import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/sos_provider.dart';
 import 'package:alertme/services/location_service.dart';
 import 'package:alertme/services/notification_service.dart';
+import 'package:alertme/services/audio_service.dart'; // ИСПРАВЛЕНО
 import 'package:alertme/screens/sos_active_screen.dart';
+import 'dart:async';
 
-class SOSConfirmationScreen extends StatelessWidget {
+class SOSConfirmationScreen extends StatefulWidget {
   const SOSConfirmationScreen({super.key});
+
+  @override
+  State<SOSConfirmationScreen> createState() => _SOSConfirmationScreenState();
+}
+
+class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
+  final AudioService _audioService = AudioService(); // ИСПРАВЛЕНО
+  bool _isRecording = false;
+  Timer? _recordingTimer;
+  int _recordingSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAndStartRecording();
+  }
+
+  @override
+  void dispose() {
+    _recordingTimer?.cancel();
+    _audioService.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initAndStartRecording() async {
+    await _audioService.init();
+    await _startRecording();
+  }
+
+  Future<void> _startRecording() async {
+    final success = await _audioService.startRecording();
+    
+    if (success) {
+      setState(() => _isRecording = true);
+      
+      // Таймер записи
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() => _recordingSeconds++);
+          
+          // Останавливаем через 30 секунд
+          if (_recordingSeconds >= 30) {
+            _stopRecording();
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    await _audioService.stopRecording();
+    _recordingTimer?.cancel();
+    setState(() => _isRecording = false);
+  }
 
   Future<void> _activateSOS(BuildContext context) async {
     final authProvider = context.read<AuthProvider>();
@@ -17,6 +73,14 @@ class SOSConfirmationScreen extends StatelessWidget {
     final sosProvider = context.read<SOSProvider>();
     final locationService = LocationService();
     final notificationService = NotificationService();
+
+    // Останавливаем запись если идет
+    String? audioPath;
+    if (_isRecording) {
+      audioPath = await _audioService.stopRecording();
+    } else {
+      audioPath = _audioService.recordingPath;
+    }
 
     // Показываем загрузку
     if (!context.mounted) return;
@@ -34,7 +98,7 @@ class SOSConfirmationScreen extends StatelessWidget {
       
       if (location == null) {
         if (context.mounted) {
-          Navigator.pop(context); // Закрываем загрузку
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Не удалось определить местоположение'),
@@ -51,6 +115,7 @@ class SOSConfirmationScreen extends StatelessWidget {
         longitude: location.longitude,
         address: location.address,
         activationMethod: 'button',
+        notes: audioPath != null ? 'С аудиозаписью' : null,
       );
 
       if (alert == null) {
@@ -79,11 +144,42 @@ class SOSConfirmationScreen extends StatelessWidget {
       if (contacts.isNotEmpty) {
         await notificationService.sendSOSToAll(contacts, message);
         
-        // 5. Звоним основному контакту
+        // 5. Отправляем аудио в Telegram если есть
+        if (audioPath != null) {
+          final botToken = '7205482794:AAFstGWp1aOoLS_L_TNVX74aQzgwGDgKQy8';
+          
+          debugPrint('🎤 Аудио записано: $audioPath');
+          
+          // Отправляем аудио каждому контакту с Telegram username
+          for (final contact in contacts) {
+            if (contact.telegramUsername != null && contact.telegramUsername!.isNotEmpty) {
+              debugPrint('📤 Попытка отправить аудио @${contact.telegramUsername}');
+              
+              // TODO: Получить chat_id из базы через API
+              // Пока просто логируем
+              // Когда бэкенд готов - раскомментировать:
+              /*
+              final chatId = await _getChatIdFromBackend(contact.telegramUsername);
+              if (chatId != null) {
+                await _audioService.sendAudioToTelegram(
+                  botToken: botToken,
+                  chatId: chatId,
+                  audioPath: audioPath,
+                  caption: '🚨 SOS от ${authProvider.currentUser?.name}\n'
+                          '📍 ${location.address ?? "Неизвестно"}\n'
+                          '⏰ ${DateTime.now().hour}:${DateTime.now().minute}',
+                );
+              }
+              */
+            }
+          }
+        }
+        
+        // 6. Звоним основному контакту
         await notificationService.callPrimaryContact(contacts);
       }
 
-      // 6. Переходим на экран активного SOS
+      // 7. Переходим на экран активного SOS
       if (context.mounted) {
         Navigator.pop(context); // Закрываем загрузку
         Navigator.pop(context); // Закрываем экран подтверждения
@@ -135,6 +231,37 @@ class SOSConfirmationScreen extends StatelessWidget {
               
               const SizedBox(height: AppSpacing.lg),
               
+              // Индикатор записи
+              if (_isRecording) ...[
+                Container(
+                  padding: AppSpacing.paddingMd,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Запись аудио: ${_recordingSeconds}с / 30с',
+                        style: context.textStyles.bodyLarge?.semiBold
+                            .withColor(Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              
               Container(
                 padding: AppSpacing.paddingLg,
                 decoration: BoxDecoration(
@@ -162,6 +289,11 @@ class SOSConfirmationScreen extends StatelessWidget {
                       Icons.location_on,
                       'Ваше местоположение',
                     ),
+                    if (_isRecording || _audioService.recordingPath != null)
+                      _buildActionItem(
+                        Icons.mic,
+                        'Аудиозапись (готовится)',
+                      ),
                   ],
                 ),
               ),
@@ -174,7 +306,10 @@ class SOSConfirmationScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 56,
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          _audioService.cancelRecording();
+                          Navigator.pop(context);
+                        },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.white, width: 2),
                           foregroundColor: Colors.white,

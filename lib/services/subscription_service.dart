@@ -50,18 +50,27 @@ class SubscriptionService {
     try {
       final data = await _api.getJson('/subscriptions/current/', auth: true);
       
-      if (data['detail'] != null || data['plan'] == 'free') {
-        _currentSubscription = null;
-        debugPrint('ℹ️ Нет активной подписки (Free план)');
-        return;
-      }
-      
-      if (data['id'] != null && data['plan'] != null) {
-        _currentSubscription = UserSubscription.fromJson(data);
-        debugPrint('✅ Подписка загружена: ${_currentSubscription?.plan.name}');
+      // Проверяем is_premium вместо множественных проверок
+      if (data['is_premium'] == true && data['id'] != null) {
+        // Создаем подписку из упрощенного ответа
+        _currentSubscription = UserSubscription(
+          id: data['id'] as int,
+          plan: SubscriptionPlan.fromJson(data['plan'] as Map<String, dynamic>),
+          status: data['status'] as String,
+          paymentPeriod: data['payment_period'] as String? ?? 'monthly',
+          startDate: DateTime.parse(data['end_date'] as String).subtract(const Duration(days: 30)),
+          endDate: DateTime.parse(data['end_date'] as String),
+          autoRenew: data['auto_renew'] as bool? ?? false,
+          daysRemaining: data['days_remaining'] as int? ?? 0,
+          isActive: data['is_premium'] as bool? ?? false,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        
+        debugPrint('✅ Premium подписка: ${_currentSubscription?.plan.name}');
       } else {
         _currentSubscription = null;
-        debugPrint('⚠️ Неполные данные подписки');
+        debugPrint('ℹ️ Free план');
       }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки подписки: $e');

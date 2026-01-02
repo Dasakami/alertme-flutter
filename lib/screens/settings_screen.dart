@@ -8,6 +8,7 @@ import 'package:alertme/models/user.dart';
 import 'package:alertme/screens/subscription_screen.dart';
 import 'package:alertme/screens/onboarding_screen.dart';
 import 'package:alertme/screens/profile_edit_screen.dart'; 
+import 'package:alertme/screens/notifications_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -77,12 +78,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSubscriptionTile(context, lang, subscriptionProvider),
             
             // Уведомления
+            // Уведомления - ИСПРАВЛЕНО
             _buildSettingsTile(
               context,
               icon: Icons.notifications_outlined,
               title: lang.translate('notifications'),
-              subtitle: 'Включены',
-              onTap: () {},
+              subtitle: 'Настройка уведомлений',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsSettingsScreen(),
+                  ),
+                );
+              },
             ),
             
             const SizedBox(height: AppSpacing.lg),
