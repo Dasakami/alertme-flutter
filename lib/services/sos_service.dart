@@ -1,9 +1,15 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:alertme/models/sos_alert.dart';
 import 'package:alertme/services/api_client.dart';
+import 'package:alertme/services/storage_service.dart';
+import 'package:alertme/config/api_config.dart';
 
 class SOSService {
   final ApiClient _api = ApiClient();
+  final StorageService _storage = StorageService();
+  
   List<SOSAlertModel> _alerts = [];
   SOSAlertModel? _activeAlert;
 
@@ -15,7 +21,7 @@ class SOSService {
     try {
       final data = await _api.getJson('/sos-alerts/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results;
       if (data is List) {
         results = data as List<dynamic>;
       } else if (data['results'] is List) {
@@ -54,15 +60,18 @@ class SOSService {
     }
   }
 
-  Future<SOSAlertModel> triggerSOS({
+  /// ✅ ИСПРАВЛЕНО: Активация SOS с аудио файлом
+  Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
     double? locationAccuracy,
     String? address,
     String activationMethod = 'button',
     String? notes,
+    String? audioPath,  // ← ИСПРАВЛЕНО: название параметра
   }) async {
     try {
+      // 1. Создаем SOS без медиа
       final data = await _api.postJson('/sos-alerts/', body: {
         'latitude': latitude,
         'longitude': longitude,
@@ -77,10 +86,75 @@ class SOSService {
       _alerts.insert(0, alert);
       
       debugPrint('✅ SOS активирован: ${alert.id}');
+      
+      // 2. Загружаем аудио если есть
+      if (audioPath != null) {
+        final audioUploaded = await uploadAudio(alert.id, audioPath);
+        if (audioUploaded) {
+          debugPrint('✅ Аудио загружено для SOS ${alert.id}');
+        } else {
+          debugPrint('⚠️ Не удалось загрузить аудио');
+        }
+      }
+      
       return alert;
     } catch (e) {
       debugPrint('❌ Ошибка активации SOS: $e');
       rethrow;
+    }
+  }
+
+  /// ✅ ИСПРАВЛЕНО: Загрузка аудио файла
+  Future<bool> uploadAudio(int sosId, String audioPath) async {
+    try {
+      final file = File(audioPath);
+      
+      if (!await file.exists()) {
+        debugPrint('❌ Аудио файл не найден: $audioPath');
+        return false;
+      }
+
+      // ✅ ИСПРАВЛЕНО: Получаем токен через StorageService
+      final token = await _storage.getAccessToken();
+      if (token == null) {
+        debugPrint('❌ Токен отсутствует');
+        return false;
+      }
+
+      // ✅ ИСПРАВЛЕНО: Используем apiBaseUrl из конфига
+      final uri = Uri.parse('$apiBaseUrl/sos-alerts/$sosId/upload_audio/');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Добавляем заголовки
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      // Добавляем файл
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'audio',
+          audioPath,
+          filename: 'sos_audio.aac',
+        ),
+      );
+
+      debugPrint('📤 Загрузка аудио на сервер: $uri');
+      
+      // Отправляем
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      
+      if (response.statusCode == 200) {
+        debugPrint('✅ Аудио успешно загружено');
+        debugPrint('Response: $responseBody');
+        return true;
+      } else {
+        debugPrint('❌ Ошибка загрузки аудио: ${response.statusCode}');
+        debugPrint('Response: $responseBody');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Ошибка загрузки аудио: $e');
+      return false;
     }
   }
 
@@ -136,7 +210,7 @@ class SOSService {
     try {
       final data = await _api.getJson('/sos-alerts/history/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results;
       if (data is List) {
         results = data as List<dynamic>;
       } else if (data['results'] is List) {

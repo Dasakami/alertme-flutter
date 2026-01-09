@@ -28,6 +28,7 @@ class SOSProvider with ChangeNotifier {
     }
   }
 
+  /// ✅ ИСПРАВЛЕНО: параметр audioPath
   Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
@@ -35,6 +36,7 @@ class SOSProvider with ChangeNotifier {
     String? address,
     String activationMethod = 'button',
     String? notes,
+    String? audioPath,  // ← ИСПРАВЛЕНО
   }) async {
     _isLoading = true;
     _error = null;
@@ -48,6 +50,7 @@ class SOSProvider with ChangeNotifier {
         address: address,
         activationMethod: activationMethod,
         notes: notes,
+        audioPath: audioPath,  // ← ИСПРАВЛЕНО
       );
       _isLoading = false;
       notifyListeners();

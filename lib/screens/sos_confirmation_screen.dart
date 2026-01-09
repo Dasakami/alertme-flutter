@@ -5,8 +5,7 @@ import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/sos_provider.dart';
 import 'package:alertme/services/location_service.dart';
-import 'package:alertme/services/notification_service.dart';
-import 'package:alertme/services/audio_service.dart'; // ИСПРАВЛЕНО
+import 'package:alertme/services/audio_service.dart';
 import 'package:alertme/screens/sos_active_screen.dart';
 import 'dart:async';
 
@@ -18,7 +17,7 @@ class SOSConfirmationScreen extends StatefulWidget {
 }
 
 class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
-  final AudioService _audioService = AudioService(); // ИСПРАВЛЕНО
+  final AudioService _audioService = AudioService();
   bool _isRecording = false;
   Timer? _recordingTimer;
   int _recordingSeconds = 0;
@@ -47,12 +46,10 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     if (success) {
       setState(() => _isRecording = true);
       
-      // Таймер записи
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
           setState(() => _recordingSeconds++);
           
-          // Останавливаем через 30 секунд
           if (_recordingSeconds >= 30) {
             _stopRecording();
           }
@@ -67,12 +64,10 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     setState(() => _isRecording = false);
   }
 
+  /// ✅ ИСПРАВЛЕНО: Активация SOS
   Future<void> _activateSOS(BuildContext context) async {
-    final authProvider = context.read<AuthProvider>();
-    final contactProvider = context.read<ContactProvider>();
     final sosProvider = context.read<SOSProvider>();
     final locationService = LocationService();
-    final notificationService = NotificationService();
 
     // Останавливаем запись если идет
     String? audioPath;
@@ -81,6 +76,8 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     } else {
       audioPath = _audioService.recordingPath;
     }
+
+    debugPrint('🎤 Путь к аудио: $audioPath');
 
     // Показываем загрузку
     if (!context.mounted) return;
@@ -109,13 +106,14 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
         return;
       }
 
-      // 2. Активируем SOS на сервере
+      // 2. ✅ ИСПРАВЛЕНО: Активируем SOS с правильным названием параметра
       final alert = await sosProvider.triggerSOS(
         latitude: location.latitude,
         longitude: location.longitude,
         address: location.address,
         activationMethod: 'button',
         notes: audioPath != null ? 'С аудиозаписью' : null,
+        audioPath: audioPath,  // ← ИСПРАВЛЕНО: audioPath вместо audioFilePath
       );
 
       if (alert == null) {
@@ -131,55 +129,10 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
         return;
       }
 
-      // 3. Генерируем сообщение
-      final message = notificationService.generateSOSMessage(
-        userName: authProvider.currentUser?.name ?? 'Пользователь',
-        latitude: location.latitude,
-        longitude: location.longitude,
-        address: location.address,
-      );
+      debugPrint('✅ SOS создан с ID: ${alert.id}');
+      debugPrint('✅ Аудио отправлено: ${audioPath != null}');
 
-      // 4. Отправляем SMS всем контактам
-      final contacts = contactProvider.contacts;
-      if (contacts.isNotEmpty) {
-        await notificationService.sendSOSToAll(contacts, message);
-        
-        // 5. Отправляем аудио в Telegram если есть
-        if (audioPath != null) {
-          final botToken = '7205482794:AAFstGWp1aOoLS_L_TNVX74aQzgwGDgKQy8';
-          
-          debugPrint('🎤 Аудио записано: $audioPath');
-          
-          // Отправляем аудио каждому контакту с Telegram username
-          for (final contact in contacts) {
-            if (contact.telegramUsername != null && contact.telegramUsername!.isNotEmpty) {
-              debugPrint('📤 Попытка отправить аудио @${contact.telegramUsername}');
-              
-              // TODO: Получить chat_id из базы через API
-              // Пока просто логируем
-              // Когда бэкенд готов - раскомментировать:
-              /*
-              final chatId = await _getChatIdFromBackend(contact.telegramUsername);
-              if (chatId != null) {
-                await _audioService.sendAudioToTelegram(
-                  botToken: botToken,
-                  chatId: chatId,
-                  audioPath: audioPath,
-                  caption: '🚨 SOS от ${authProvider.currentUser?.name}\n'
-                          '📍 ${location.address ?? "Неизвестно"}\n'
-                          '⏰ ${DateTime.now().hour}:${DateTime.now().minute}',
-                );
-              }
-              */
-            }
-          }
-        }
-        
-        // 6. Звоним основному контакту
-        await notificationService.callPrimaryContact(contacts);
-      }
-
-      // 7. Переходим на экран активного SOS
+      // 3. Переходим на экран активного SOS
       if (context.mounted) {
         Navigator.pop(context); // Закрываем загрузку
         Navigator.pop(context); // Закрываем экран подтверждения
@@ -282,8 +235,8 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                       'SMS всем контактам (${contactProvider.contacts.length})',
                     ),
                     _buildActionItem(
-                      Icons.phone,
-                      'Звонок основному контакту',
+                      Icons.email,
+                      'Email с медиа файлами',
                     ),
                     _buildActionItem(
                       Icons.location_on,
@@ -292,7 +245,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                     if (_isRecording || _audioService.recordingPath != null)
                       _buildActionItem(
                         Icons.mic,
-                        'Аудиозапись (готовится)',
+                        'Аудиозапись (${_recordingSeconds}с)',
                       ),
                   ],
                 ),
