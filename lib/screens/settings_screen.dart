@@ -21,7 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Загружаем подписку при открытии настроек
+    // ✅ Загружаем подписку ОДИН РАЗ при открытии
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshSubscription();
     });
@@ -29,7 +29,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _refreshSubscription() async {
     try {
+      // ✅ Тихое обновление (без уведомлений = без перестроения виджетов)
       await context.read<SubscriptionProvider>().loadCurrentSubscription();
+      
+      // ✅ Один setState для обновления UI
+      if (mounted) {
+        setState(() {});
+      }
+      
       debugPrint('✅ Подписка обновлена в настройках');
     } catch (e) {
       debugPrint('❌ Ошибка обновления подписки: $e');

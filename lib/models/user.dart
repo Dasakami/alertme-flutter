@@ -5,10 +5,11 @@ class UserModel {
   final String? email;
   final String? firstName;
   final String? lastName;
-  final String? telegramUsername; // НОВОЕ ПОЛЕ
+  final String? telegramUsername;
   final String? avatar;
   final String language;
   final bool isPhoneVerified;
+  final bool isPremium; // ✅ ДОБАВЛЕНО
   final DateTime createdAt;
 
   UserModel({
@@ -17,10 +18,11 @@ class UserModel {
     this.email,
     this.firstName,
     this.lastName,
-    this.telegramUsername, // НОВОЕ
+    this.telegramUsername,
     this.avatar,
     this.language = 'ru',
     this.isPhoneVerified = false,
+    this.isPremium = false, // ✅ ДОБАВЛЕНО
     required this.createdAt,
   });
 
@@ -42,10 +44,11 @@ class UserModel {
     email: json['email'] as String?,
     firstName: json['first_name'] as String?,
     lastName: json['last_name'] as String?,
-    telegramUsername: json['telegram_username'] as String?, // НОВОЕ
+    telegramUsername: json['telegram_username'] as String?,
     avatar: json['avatar'] as String?,
     language: json['language'] as String? ?? 'ru',
     isPhoneVerified: json['is_phone_verified'] as bool? ?? false,
+    isPremium: json['is_premium'] as bool? ?? false, // ✅ ДОБАВЛЕНО
     createdAt: DateTime.parse(json['created_at'] as String),
   );
 
@@ -56,10 +59,11 @@ class UserModel {
     'email': email,
     'first_name': firstName,
     'last_name': lastName,
-    'telegram_username': telegramUsername, // НОВОЕ
+    'telegram_username': telegramUsername,
     'avatar': avatar,
     'language': language,
     'is_phone_verified': isPhoneVerified,
+    'is_premium': isPremium, // ✅ ДОБАВЛЕНО
     'created_at': createdAt.toIso8601String(),
   };
 
@@ -70,10 +74,11 @@ class UserModel {
     String? email,
     String? firstName,
     String? lastName,
-    String? telegramUsername, // НОВОЕ
+    String? telegramUsername,
     String? avatar,
     String? language,
     bool? isPhoneVerified,
+    bool? isPremium, // ✅ ДОБАВЛЕНО
     DateTime? createdAt,
   }) => UserModel(
     id: id ?? this.id,
@@ -81,15 +86,16 @@ class UserModel {
     email: email ?? this.email,
     firstName: firstName ?? this.firstName,
     lastName: lastName ?? this.lastName,
-    telegramUsername: telegramUsername ?? this.telegramUsername, // НОВОЕ
+    telegramUsername: telegramUsername ?? this.telegramUsername,
     avatar: avatar ?? this.avatar,
     language: language ?? this.language,
     isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
+    isPremium: isPremium ?? this.isPremium, // ✅ ДОБАВЛЕНО
     createdAt: createdAt ?? this.createdAt,
   );
 
   @override
-  String toString() => 'User(id: $id, phone: $phoneNumber, name: $name)';
+  String toString() => 'User(id: $id, phone: $phoneNumber, name: $name, premium: $isPremium)';
 
   @override
   bool operator ==(Object other) =>

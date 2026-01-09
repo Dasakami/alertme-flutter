@@ -46,31 +46,42 @@ class SubscriptionService {
     }
   }
 
+  /// ✅ ИСПРАВЛЕНО: Загрузка подписки с единого API
   Future<void> loadCurrentSubscription() async {
     try {
+      debugPrint('📡 Загрузка подписки...');
+      
       final data = await _api.getJson('/subscriptions/current/', auth: true);
       
-      // Проверяем is_premium вместо множественных проверок
-      if (data['is_premium'] == true && data['id'] != null) {
-        // Создаем подписку из упрощенного ответа
+      debugPrint('📦 Получен ответ: ${data.keys}');
+      
+      // Проверяем статус
+      final isPremium = data['is_premium'] as bool? ?? false;
+      final status = data['status'] as String?;
+      
+      if (isPremium && data['id'] != null) {
+        // Есть активная подписка
         _currentSubscription = UserSubscription(
           id: data['id'] as int,
           plan: SubscriptionPlan.fromJson(data['plan'] as Map<String, dynamic>),
-          status: data['status'] as String,
+          status: status ?? 'active',
           paymentPeriod: data['payment_period'] as String? ?? 'monthly',
           startDate: DateTime.parse(data['end_date'] as String).subtract(const Duration(days: 30)),
           endDate: DateTime.parse(data['end_date'] as String),
           autoRenew: data['auto_renew'] as bool? ?? false,
           daysRemaining: data['days_remaining'] as int? ?? 0,
-          isActive: data['is_premium'] as bool? ?? false,
+          isActive: true,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
         
-        debugPrint('✅ Premium подписка: ${_currentSubscription?.plan.name}');
+        debugPrint('✅ Premium подписка загружена: ${_currentSubscription?.plan.name}');
+        debugPrint('   - Статус: ${_currentSubscription?.status}');
+        debugPrint('   - Дней осталось: ${_currentSubscription?.daysRemaining}');
       } else {
+        // Free план или нет подписки
         _currentSubscription = null;
-        debugPrint('ℹ️ Free план');
+        debugPrint('ℹ️ Free план или нет подписки');
       }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки подписки: $e');
@@ -78,19 +89,49 @@ class SubscriptionService {
     }
   }
 
-  // НОВОЕ: Активация кода из Telegram
+  /// ✅ ИСПРАВЛЕНО: Активация кода с обновлением is_premium
   Future<bool> activateCode(String code) async {
     try {
+      debugPrint('🔑 Активация кода: $code');
+      
       final data = await _api.postJson(
         '/activation-codes/activate/',
         body: {'code': code},
         auth: true,
       );
       
+      debugPrint('📦 Ответ сервера: $data');
+      
       if (data['success'] == true) {
-        // Перезагружаем текущую подписку
-        await loadCurrentSubscription();
+        // Обновляем подписку из ответа
+        if (data['subscription'] != null) {
+          final subData = data['subscription'] as Map<String, dynamic>;
+          
+          _currentSubscription = UserSubscription(
+            id: subData['id'] as int,
+            plan: SubscriptionPlan(
+              id: 2, // Premium plan ID
+              name: subData['plan'] as String? ?? 'Premium',
+              planType: 'personal_premium',
+              priceMonthly: 100,
+              maxContacts: 999,
+              geozonesEnabled: true,
+              locationHistoryEnabled: true,
+            ),
+            status: subData['status'] as String,
+            paymentPeriod: 'monthly',
+            startDate: DateTime.now(),
+            endDate: DateTime.parse(subData['end_date'] as String),
+            autoRenew: false,
+            daysRemaining: subData['days_remaining'] as int? ?? 0,
+            isActive: subData['is_premium'] as bool? ?? true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        }
+        
         debugPrint('✅ Код активирован успешно');
+        debugPrint('   - is_premium на сервере обновлен');
         return true;
       }
       
@@ -101,7 +142,6 @@ class SubscriptionService {
     }
   }
 
-  // НОВОЕ: Проверка кода без активации
   Future<Map<String, dynamic>?> checkCode(String code) async {
     try {
       final data = await _api.postJson(

@@ -17,6 +17,7 @@ class AuthService {
     await loadCurrentUser();
   }
 
+  /// ✅ Загрузка пользователя из кэша
   Future<void> loadCurrentUser() async {
     try {
       final json = await _storage.getJson(_storage.userKey);
@@ -24,7 +25,8 @@ class AuthService {
       if (json != null) {
         _currentUser = UserModel.fromJson(json);
         debugPrint('✅ Пользователь загружен из кэша: ${_currentUser?.phoneNumber}');
-      } else {
+        
+        // Проверяем токен и подгружаем актуальные данные
         final token = await _storage.getAccessToken();
         if (token != null && token.isNotEmpty) {
           await loadUserProfile();
@@ -35,6 +37,7 @@ class AuthService {
     }
   }
 
+  /// ✅ НОВОЕ: Загрузка профиля с сервера (с is_premium)
   Future<void> loadUserProfile() async {
     try {
       final data = await _api.getJson('/users/me/', auth: true);
@@ -43,7 +46,7 @@ class AuthService {
       await _storage.saveJson(_storage.userKey, user.toJson());
       _currentUser = user;
       
-      debugPrint('✅ Профиль загружен: ${user.phoneNumber}');
+      debugPrint('✅ Профиль загружен: ${user.phoneNumber}, is_premium=${user.isPremium}');
     } catch (e) {
       debugPrint('❌ Ошибка загрузки профиля: $e');
       rethrow;
@@ -83,7 +86,6 @@ class AuthService {
     try {
       final data = await _api.postJson('/auth/register/', body: body, auth: false);
       
-      // Регистрация прошла, но нужно подтвердить номер
       debugPrint('✅ Регистрация успешна: $phoneNumber');
       debugPrint('⚠️ Требуется подтверждение номера');
     } catch (e) {
@@ -99,7 +101,6 @@ class AuthService {
       }, auth: false);
       
       debugPrint('✅ SMS код отправлен: $phoneNumber');
-      debugPrint('🔑 Тестовый код: ${data['code']}'); // ДЛЯ ТЕСТИРОВАНИЯ
       
       return data;
     } catch (e) {
@@ -137,24 +138,18 @@ class AuthService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // АВТОРИЗАЦИЯ ПО ТЕЛЕФОНУ (без username)
-  // ═══════════════════════════════════════════════════════════════
+  /// ✅ Авторизация по телефону и паролю
   Future<bool> login({
     required String phoneNumber, 
     required String password
   }) async {
     try {
-      debugPrint('🔐 Попытка входа...');
-      debugPrint('📱 Номер: $phoneNumber');
+      debugPrint('🔐 Попытка входа: $phoneNumber');
       
-      // Отправляем phone_number и password
       final body = {
         'phone_number': phoneNumber,
         'password': password,
       };
-      
-      debugPrint('📤 Отправляем: $body');
       
       final data = await _api.postJson('/auth/login/', body: body, auth: false);
 
@@ -175,8 +170,11 @@ class AuthService {
         final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
         await _storage.saveJson(_storage.userKey, user.toJson());
         _currentUser = user;
-        debugPrint('✅ Пользователь сохранен');
+        debugPrint('✅ Пользователь сохранен, is_premium=${user.isPremium}');
       }
+      
+      // Загружаем актуальный профиль
+      await loadUserProfile();
       
       debugPrint('✅ Вход выполнен: $phoneNumber');
       return true;
@@ -186,6 +184,7 @@ class AuthService {
     }
   }
 
+  /// ✅ ИСПРАВЛЕННОЕ обновление профиля
   Future<void> updateProfile({
     String? email,
     String? firstName,
@@ -201,6 +200,8 @@ class AuthService {
       if (telegramUsername != null) body['telegram_username'] = telegramUsername;
       if (language != null) body['language'] = language;
 
+      debugPrint('📤 Отправка обновления профиля: $body');
+
       // ИСПРАВЛЕН URL
       final data = await _api.patchJson(
         '/users/update-profile/', 
@@ -208,11 +209,26 @@ class AuthService {
         auth: true
       );
 
-      final user = UserModel.fromJson(data);
+      debugPrint('✅ Ответ сервера получен');
+
+      // Проверяем структуру ответа
+      Map<String, dynamic> userData;
+      if (data['user'] != null) {
+        userData = data['user'] as Map<String, dynamic>;
+      } else {
+        userData = data;
+      }
+
+      final user = UserModel.fromJson(userData);
       await _storage.saveJson(_storage.userKey, user.toJson());
       _currentUser = user;
 
-      debugPrint('✅ Профиль обновлен');
+      debugPrint('✅ Профиль обновлен локально');
+      
+      // Перезагружаем профиль с сервера для синхронизации
+      await loadUserProfile();
+      
+      debugPrint('✅ Профиль синхронизирован с сервером');
     } catch (e) {
       debugPrint('❌ Ошибка обновления профиля: $e');
       rethrow;

@@ -44,21 +44,32 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     final authProvider = context.read<AuthProvider>();
     
-    await authProvider.updateProfile(
-      firstName: _firstNameController.text.isEmpty ? null : _firstNameController.text,
-      lastName: _lastNameController.text.isEmpty ? null : _lastNameController.text,
-      email: _emailController.text.isEmpty ? null : _emailController.text,
-      telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text,
-    );
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Профиль обновлен'),
-          backgroundColor: AppColors.softCyan,
-        ),
+    try {
+      await authProvider.updateProfile(
+        firstName: _firstNameController.text.isEmpty ? null : _firstNameController.text,
+        lastName: _lastNameController.text.isEmpty ? null : _lastNameController.text,
+        email: _emailController.text.isEmpty ? null : _emailController.text,
+        telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text,
       );
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Профиль обновлен'),
+            backgroundColor: AppColors.softCyan,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Ошибка: $e'),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+      }
     }
   }
 

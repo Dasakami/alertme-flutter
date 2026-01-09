@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/subscription_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
+import 'package:alertme/providers/auth_provider.dart';
 
 class ActivationCodeScreen extends StatefulWidget {
   const ActivationCodeScreen({super.key});
@@ -30,6 +31,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
     setState(() => _isLoading = true);
 
     final subscriptionProvider = context.read<SubscriptionProvider>();
+    final authProvider = context.read<AuthProvider>();
     final code = _codeController.text.trim().toUpperCase();
 
     try {
@@ -38,7 +40,10 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ ОБНОВЛЯЕМ ПОДПИСКУ ПОСЛЕ АКТИВАЦИИ
+        // ✅ Перезагружаем профиль пользователя (обновляет is_premium)
+        await authProvider.loadProfile();
+        
+        // ✅ Тихо обновляем подписку
         await subscriptionProvider.loadCurrentSubscription();
         
         Navigator.pop(context);
@@ -72,7 +77,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageProvider>();

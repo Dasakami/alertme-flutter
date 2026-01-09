@@ -14,7 +14,19 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> init() async {
     await _authService.init();
+    // ✅ Загружаем профиль при инициализации
+    await loadProfile();
     notifyListeners();
+  }
+  
+  /// ✅ НОВЫЙ МЕТОД: Загрузка профиля (с is_premium)
+  Future<void> loadProfile() async {
+    try {
+      await _authService.loadUserProfile();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Ошибка загрузки профиля: $e');
+    }
   }
 
   Future<bool> register({

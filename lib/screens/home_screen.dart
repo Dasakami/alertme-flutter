@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
   @override
   void initState() {
     super.initState();
@@ -30,13 +31,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
+    final authProvider = context.read<AuthProvider>();
     final contactProvider = context.read<ContactProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
     final sosProvider = context.read<SOSProvider>();
 
+    // ✅ Загружаем профиль (с is_premium)
+    await authProvider.loadProfile();
+    
     await Future.wait([
       contactProvider.loadContacts(),
-      subscriptionProvider.loadCurrentSubscription(),
+      subscriptionProvider.loadCurrentSubscription(), // Тихо
       sosProvider.loadAlerts(),
     ]);
   }

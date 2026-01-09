@@ -31,8 +31,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final lang = Provider.of<LanguageProvider>(context);
     final contactProvider = Provider.of<ContactProvider>(context);
     final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
+    final authProvider = context.read<AuthProvider>();
 
-    final maxContacts = subscriptionProvider.isPremium ? 999 : 3;
+    final maxContacts = authProvider.currentUser?.isPremium == true ? 999 : 3;
     final canAdd = contactProvider.canAddContact(maxContacts);
 
     return Scaffold(
