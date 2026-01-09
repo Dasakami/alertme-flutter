@@ -1,13 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:alertme/models/sos_alert.dart';
-import 'package:alertme/services/api_client.dart';
 import 'package:alertme/services/storage_service.dart';
 import 'package:alertme/config/api_config.dart';
 
 class SOSService {
-  final ApiClient _api = ApiClient();
   final StorageService _storage = StorageService();
   
   List<SOSAlertModel> _alerts = [];
@@ -17,50 +16,48 @@ class SOSService {
   SOSAlertModel? get activeAlert => _activeAlert;
   bool get hasActiveAlert => _activeAlert != null;
 
+  /// ✅ Загрузка списка SOS алертов
   Future<void> loadAlerts() async {
     try {
-      final data = await _api.getJson('/sos-alerts/', auth: true);
-      
-      List<dynamic> results;
-      if (data is List) {
-        results = data as List<dynamic>;
-      } else if (data['results'] is List) {
-        results = data['results'] as List<dynamic>;
-      } else if (data['data'] is List) {
-        results = data['data'] as List<dynamic>;
-      } else {
-        results = [];
+      final token = await _storage.getAccessToken();
+      if (token == null) return;
+
+      final uri = Uri.parse('$apiBaseUrl/sos-alerts/');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        List<dynamic> results;
+        if (data is List) {
+          results = data;
+        } else if (data['results'] is List) {
+          results = data['results'];
+        } else {
+          results = [];
+        }
+
+        _alerts = results
+            .map((e) => SOSAlertModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        _activeAlert = _alerts.where((a) => a.isActive).lastOrNull;
+        
+        debugPrint('✅ Загружено ${_alerts.length} SOS алертов');
       }
-      
-      _alerts = results
-          .map((e) => SOSAlertModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      
-      _activeAlert = _alerts
-          .where((a) => a.isActive)
-          .lastOrNull;
-          
-      debugPrint('✅ Загружено ${_alerts.length} SOS сигналов');
     } catch (e) {
       debugPrint('❌ Ошибка загрузки SOS: $e');
-      _alerts = [];
-      rethrow;
+      // Не пробрасываем ошибку - это не критично
     }
   }
 
-  Future<SOSAlertModel?> getActiveAlert() async {
-    try {
-      final data = await _api.getJson('/sos-alerts/active/', auth: true);
-      _activeAlert = SOSAlertModel.fromJson(data);
-      return _activeAlert;
-    } catch (e) {
-      debugPrint('❌ Нет активного SOS сигнала');
-      _activeAlert = null;
-      return null;
-    }
-  }
-
-  /// ✅ ИСПРАВЛЕНО: Активация SOS с аудио файлом
+  /// ✅ Создание SOS с аудио в одном запросе (multipart)
   Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
@@ -68,165 +65,175 @@ class SOSService {
     String? address,
     String activationMethod = 'button',
     String? notes,
-    String? audioPath,  // ← ИСПРАВЛЕНО: название параметра
+    String? audioPath,
   }) async {
     try {
-      // 1. Создаем SOS без медиа
-      final data = await _api.postJson('/sos-alerts/', body: {
-        'latitude': latitude,
-        'longitude': longitude,
-        'location_accuracy': locationAccuracy,
-        'address': address,
-        'activation_method': activationMethod,
-        'notes': notes,
-      }, auth: true);
-      
-      final alert = SOSAlertModel.fromJson(data);
-      _activeAlert = alert;
-      _alerts.insert(0, alert);
-      
-      debugPrint('✅ SOS активирован: ${alert.id}');
-      
-      // 2. Загружаем аудио если есть
-      if (audioPath != null) {
-        final audioUploaded = await uploadAudio(alert.id, audioPath);
-        if (audioUploaded) {
-          debugPrint('✅ Аудио загружено для SOS ${alert.id}');
-        } else {
-          debugPrint('⚠️ Не удалось загрузить аудио');
-        }
-      }
-      
-      return alert;
-    } catch (e) {
-      debugPrint('❌ Ошибка активации SOS: $e');
-      rethrow;
-    }
-  }
-
-  /// ✅ ИСПРАВЛЕНО: Загрузка аудио файла
-  Future<bool> uploadAudio(int sosId, String audioPath) async {
-    try {
-      final file = File(audioPath);
-      
-      if (!await file.exists()) {
-        debugPrint('❌ Аудио файл не найден: $audioPath');
-        return false;
-      }
-
-      // ✅ ИСПРАВЛЕНО: Получаем токен через StorageService
+      // Получаем токен
       final token = await _storage.getAccessToken();
       if (token == null) {
         debugPrint('❌ Токен отсутствует');
-        return false;
+        throw Exception('Требуется авторизация');
       }
 
-      // ✅ ИСПРАВЛЕНО: Используем apiBaseUrl из конфига
-      final uri = Uri.parse('$apiBaseUrl/sos-alerts/$sosId/upload_audio/');
+      // Создаем multipart request
+      final uri = Uri.parse('$apiBaseUrl/sos-alerts/');
       final request = http.MultipartRequest('POST', uri);
       
       // Добавляем заголовки
       request.headers['Authorization'] = 'Bearer $token';
       
-      // Добавляем файл
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'audio',
-          audioPath,
-          filename: 'sos_audio.aac',
-        ),
-      );
-
-      debugPrint('📤 Загрузка аудио на сервер: $uri');
+      // ✅ Добавляем данные SOS
+      request.fields['latitude'] = latitude.toString();
+      request.fields['longitude'] = longitude.toString();
       
-      // Отправляем
+      if (locationAccuracy != null) {
+        request.fields['location_accuracy'] = locationAccuracy.toString();
+      }
+      
+      if (address != null && address.isNotEmpty) {
+        request.fields['address'] = address;
+      }
+      
+      request.fields['activation_method'] = activationMethod;
+      
+      if (notes != null && notes.isNotEmpty) {
+        request.fields['notes'] = notes;
+      }
+
+      // ✅ Добавляем аудио файл если есть
+      if (audioPath != null) {
+        final audioFile = File(audioPath);
+        
+        if (await audioFile.exists()) {
+          debugPrint('📎 Прикрепляем аудио: $audioPath');
+          
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'audio_file',  // ← Название поля в Django
+              audioPath,
+              filename: 'sos_audio.aac',
+            ),
+          );
+          
+          final fileSize = await audioFile.length();
+          debugPrint('📁 Размер аудио: ${fileSize / 1024} KB');
+        } else {
+          debugPrint('⚠️ Аудио файл не найден: $audioPath');
+        }
+      }
+
+      debugPrint('📤 Отправка SOS на сервер...');
+      debugPrint('📍 Координаты: $latitude, $longitude');
+      debugPrint('🎤 Аудио: ${audioPath != null ? "Да" : "Нет"}');
+      
+      // Отправляем запрос
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
       
-      if (response.statusCode == 200) {
-        debugPrint('✅ Аудио успешно загружено');
-        debugPrint('Response: $responseBody');
-        return true;
+      debugPrint('📥 Ответ сервера: ${response.statusCode}');
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        // Парсим ответ
+        final data = jsonDecode(responseBody) as Map<String, dynamic>;
+        
+        final alert = SOSAlertModel.fromJson(data);
+        _activeAlert = alert;
+        _alerts.insert(0, alert);
+        
+        debugPrint('✅ SOS создан успешно: ID ${alert.id}');
+        debugPrint('🎤 Аудио загружено: ${alert.audioFile != null}');
+        
+        return alert;
       } else {
-        debugPrint('❌ Ошибка загрузки аудио: ${response.statusCode}');
+        debugPrint('❌ Ошибка создания SOS: ${response.statusCode}');
         debugPrint('Response: $responseBody');
-        return false;
+        throw Exception('Ошибка создания SOS: ${response.statusCode}');
       }
-    } catch (e) {
-      debugPrint('❌ Ошибка загрузки аудио: $e');
-      return false;
-    }
-  }
-
-  Future<SOSAlertModel> updateStatus(int alertId, String status) async {
-    try {
-      final data = await _api.postJson(
-        '/sos-alerts/$alertId/update_status/',
-        body: {'status': status},
-        auth: true,
-      );
-      
-      final updated = SOSAlertModel.fromJson(data);
-      final index = _alerts.indexWhere((a) => a.id == alertId);
-      
-      if (index != -1) {
-        _alerts[index] = updated;
-      }
-      
-      if (_activeAlert?.id == alertId && !updated.isActive) {
-        _activeAlert = null;
-      }
-      
-      debugPrint('✅ Статус SOS обновлен: $status');
-      return updated;
-    } catch (e) {
-      debugPrint('❌ Ошибка обновления статуса: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Ошибка активации SOS: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
 
+  /// Отмена SOS
   Future<void> cancelSOS() async {
     if (_activeAlert != null) {
-      await updateStatus(_activeAlert!.id, 'cancelled');
-      debugPrint('✅ SOS отменен');
+      try {
+        final token = await _storage.getAccessToken();
+        if (token == null) return;
+
+        final uri = Uri.parse('$apiBaseUrl/sos-alerts/${_activeAlert!.id}/update_status/');
+        final response = await http.post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'status': 'cancelled'}),
+        );
+
+        if (response.statusCode == 200) {
+          _activeAlert = null;
+          debugPrint('✅ SOS отменен');
+        }
+      } catch (e) {
+        debugPrint('❌ Ошибка отмены SOS: $e');
+      }
     }
   }
 
+  /// Завершение SOS
   Future<void> resolveSOS() async {
     if (_activeAlert != null) {
-      await updateStatus(_activeAlert!.id, 'resolved');
-      debugPrint('✅ SOS завершен');
+      try {
+        final token = await _storage.getAccessToken();
+        if (token == null) return;
+
+        final uri = Uri.parse('$apiBaseUrl/sos-alerts/${_activeAlert!.id}/update_status/');
+        final response = await http.post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'status': 'resolved'}),
+        );
+
+        if (response.statusCode == 200) {
+          _activeAlert = null;
+          debugPrint('✅ SOS завершен');
+        }
+      } catch (e) {
+        debugPrint('❌ Ошибка завершения SOS: $e');
+      }
     }
   }
 
+  /// Отметить как ложную тревогу
   Future<void> markAsFalseAlarm() async {
     if (_activeAlert != null) {
-      await updateStatus(_activeAlert!.id, 'false_alarm');
-      debugPrint('✅ SOS отмечен как ложная тревога');
-    }
-  }
+      try {
+        final token = await _storage.getAccessToken();
+        if (token == null) return;
 
-  Future<List<SOSAlertModel>> getHistory() async {
-    try {
-      final data = await _api.getJson('/sos-alerts/history/', auth: true);
-      
-      List<dynamic> results;
-      if (data is List) {
-        results = data as List<dynamic>;
-      } else if (data['results'] is List) {
-        results = data['results'] as List<dynamic>;
-      } else if (data['data'] is List) {
-        results = data['data'] as List<dynamic>;
-      } else {
-        results = [];
+        final uri = Uri.parse('$apiBaseUrl/sos-alerts/${_activeAlert!.id}/update_status/');
+        final response = await http.post(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'status': 'false_alarm'}),
+        );
+
+        if (response.statusCode == 200) {
+          _activeAlert = null;
+          debugPrint('✅ SOS отмечен как ложная тревога');
+        }
+      } catch (e) {
+        debugPrint('❌ Ошибка: $e');
       }
-      
-      return results
-          .map((e) => SOSAlertModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      debugPrint('❌ Ошибка загрузки истории: $e');
-      return [];
     }
   }
 

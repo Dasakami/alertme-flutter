@@ -13,22 +13,28 @@ class SOSProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// ✅ Загрузка списка SOS алертов
   Future<void> loadAlerts() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _service.loadAlerts();
+      // Пытаемся загрузить, но не показываем ошибку если не получилось
+      await _service.loadAlerts().catchError((e) {
+        debugPrint('⚠️ Не удалось загрузить SOS алерты: $e');
+        // Игнорируем ошибку - это не критично для работы приложения
+      });
     } catch (e) {
-      _error = e.toString();
+      debugPrint('⚠️ Ошибка загрузки SOS: $e');
+      // Не сохраняем ошибку, чтобы не мешать основному flow
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// ✅ ИСПРАВЛЕНО: параметр audioPath
+  /// ✅ Активация SOS с аудио в одном запросе
   Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
@@ -36,7 +42,7 @@ class SOSProvider with ChangeNotifier {
     String? address,
     String activationMethod = 'button',
     String? notes,
-    String? audioPath,  // ← ИСПРАВЛЕНО
+    String? audioPath,
   }) async {
     _isLoading = true;
     _error = null;
@@ -50,8 +56,9 @@ class SOSProvider with ChangeNotifier {
         address: address,
         activationMethod: activationMethod,
         notes: notes,
-        audioPath: audioPath,  // ← ИСПРАВЛЕНО
+        audioPath: audioPath,
       );
+      
       _isLoading = false;
       notifyListeners();
       return alert;
@@ -59,10 +66,12 @@ class SOSProvider with ChangeNotifier {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
+      debugPrint('❌ Ошибка в SOSProvider: $e');
       return null;
     }
   }
 
+  /// Отмена активного SOS
   Future<void> cancelSOS() async {
     try {
       await _service.cancelSOS();
@@ -73,6 +82,7 @@ class SOSProvider with ChangeNotifier {
     }
   }
 
+  /// Завершение SOS
   Future<void> resolveSOS() async {
     try {
       await _service.resolveSOS();
@@ -83,6 +93,7 @@ class SOSProvider with ChangeNotifier {
     }
   }
 
+  /// Отметить как ложную тревогу
   Future<void> markAsFalseAlarm() async {
     try {
       await _service.markAsFalseAlarm();
