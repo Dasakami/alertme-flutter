@@ -24,6 +24,7 @@ class TimerService {
     }
   }
 
+  /// ✅ УЛУЧШЕНО: Поддержка секунд и минут
   Future<SafetyTimer> startTimer(String userId, Duration duration) async {
     try {
       final now = DateTime.now();
@@ -38,7 +39,13 @@ class TimerService {
 
       _activeTimer = timer;
       await _storage.saveJson(_storage.safetyTimerKey, timer.toJson());
-      debugPrint('Safety timer started for ${duration.inMinutes} minutes');
+      
+      if (duration.inSeconds < 60) {
+        debugPrint('⏱️ Safety timer started for ${duration.inSeconds} seconds');
+      } else {
+        debugPrint('⏱️ Safety timer started for ${duration.inMinutes} minutes');
+      }
+      
       return timer;
     } catch (e) {
       debugPrint('Error starting timer: $e');
@@ -52,7 +59,7 @@ class TimerService {
         final updated = _activeTimer!.copyWith(isActive: false);
         _activeTimer = null;
         await _storage.saveJson(_storage.safetyTimerKey, updated.toJson());
-        debugPrint('Safety timer cancelled');
+        debugPrint('✅ Safety timer cancelled');
       }
     } catch (e) {
       debugPrint('Error cancelling timer: $e');
@@ -65,7 +72,7 @@ class TimerService {
         final updated = _activeTimer!.copyWith(isActive: false);
         _activeTimer = null;
         await _storage.saveJson(_storage.safetyTimerKey, updated.toJson());
-        debugPrint('Safety timer completed');
+        debugPrint('✅ Safety timer completed');
       }
     } catch (e) {
       debugPrint('Error completing timer: $e');

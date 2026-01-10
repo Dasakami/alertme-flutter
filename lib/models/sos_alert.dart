@@ -47,28 +47,41 @@ class SOSAlertModel {
     return mapLink ?? '';
   }
 
-  /// Создание из JSON
-  factory SOSAlertModel.fromJson(Map<String, dynamic> json) => SOSAlertModel(
-    id: json['id'] as int,
-    status: json['status'] as String,
-    latitude: (json['latitude'] as num?)?.toDouble(),
-    longitude: (json['longitude'] as num?)?.toDouble(),
-    locationAccuracy: (json['location_accuracy'] as num?)?.toDouble(),
-    address: json['address'] as String?,
-    mapLink: json['map_link'] as String?,
-    audioFile: json['audio_file'] as String?,
-    videoFile: json['video_file'] as String?,
-    activationMethod: json['activation_method'] as String?,
-    notes: json['notes'] as String?,
-    notifications: (json['notifications'] as List?)
-        ?.map((e) => SOSNotificationModel.fromJson(e as Map<String, dynamic>))
-        .toList() ?? [],
-    createdAt: DateTime.parse(json['created_at'] as String),
-    updatedAt: DateTime.parse(json['updated_at'] as String),
-    resolvedAt: json['resolved_at'] != null 
-        ? DateTime.parse(json['resolved_at'] as String) 
-        : null,
-  );
+  /// ✅ ИСПРАВЛЕН: Безопасный парсинг координат
+  factory SOSAlertModel.fromJson(Map<String, dynamic> json) {
+    // Безопасное преобразование координат
+    double? parseCoordinate(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      if (value is String) {
+        final parsed = double.tryParse(value);
+        return parsed;
+      }
+      return null;
+    }
+
+    return SOSAlertModel(
+      id: json['id'] as int,
+      status: json['status'] as String,
+      latitude: parseCoordinate(json['latitude']),
+      longitude: parseCoordinate(json['longitude']),
+      locationAccuracy: parseCoordinate(json['location_accuracy']),
+      address: json['address'] as String?,
+      mapLink: json['map_link'] as String?,
+      audioFile: json['audio_file'] as String?,
+      videoFile: json['video_file'] as String?,
+      activationMethod: json['activation_method'] as String?,
+      notes: json['notes'] as String?,
+      notifications: (json['notifications'] as List?)
+          ?.map((e) => SOSNotificationModel.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      resolvedAt: json['resolved_at'] != null 
+          ? DateTime.parse(json['resolved_at'] as String) 
+          : null,
+    );
+  }
 
   /// Конвертация в JSON
   Map<String, dynamic> toJson() => {

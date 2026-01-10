@@ -5,6 +5,7 @@ import 'package:alertme/theme.dart';
 import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/models/emergency_contact.dart';
+import 'package:alertme/services/api_client.dart';
 
 class AddContactScreen extends StatefulWidget {
   const AddContactScreen({super.key});
@@ -19,8 +20,9 @@ class _AddContactScreenState extends State<AddContactScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _relationController = TextEditingController();
-  final _telegramController = TextEditingController(); // НОВОЕ
+  final _telegramController = TextEditingController();
   bool _isPrimary = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -28,44 +30,81 @@ class _AddContactScreenState extends State<AddContactScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _relationController.dispose();
-    _telegramController.dispose(); // НОВОЕ
+    _telegramController.dispose();
     super.dispose();
   }
 
+  /// ✅ УЛУЧШЕНО: Обработка всех ошибок
   Future<void> _saveContact() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Создаем временный объект для отправки
+    setState(() => _isLoading = true);
+
     final contact = EmergencyContact(
-      id: 0, // ID будет присвоен сервером
+      id: 0,
       name: _nameController.text,
       phoneNumber: '+996${_phoneController.text}',
       email: _emailController.text.isEmpty ? null : _emailController.text,
       relation: _relationController.text.isEmpty ? null : _relationController.text,
-      telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text, // НОВОЕ
+      telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text,
       isPrimary: _isPrimary,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    final contactProvider = context.read<ContactProvider>();
-    final ok = await contactProvider.addContact(contact);
+    try {
+      final contactProvider = context.read<ContactProvider>();
+      await contactProvider.addContact(contact);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (ok) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Контакт добавлен'),
+          content: Text('✅ Контакт добавлен'),
           backgroundColor: AppColors.softCyan,
+          duration: Duration(seconds: 2),
         ),
       );
-    } else {
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      
+      setState(() => _isLoading = false);
+      
+      // ✅ Показываем понятное сообщение об ошибке
+      String errorMessage = e.message;
+      
+      // Переводим распространенные ошибки
+      if (e.message.toLowerCase().contains('unique') || 
+          e.message.toLowerCase().contains('duplicate')) {
+        errorMessage = 'Контакт с таким номером уже добавлен';
+      } else if (e.message.toLowerCase().contains('maximum') || 
+                 e.message.toLowerCase().contains('limit')) {
+        errorMessage = 'Достигнут лимит контактов';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(contactProvider.error ?? 'Ошибка добавления'),
+          content: Text('❌ $errorMessage'),
           backgroundColor: AppColors.sosRed,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'ОК',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() => _isLoading = false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Ошибка: ${e.toString()}'),
+          backgroundColor: AppColors.sosRed,
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -74,7 +113,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
-    final contactProvider = Provider.of<ContactProvider>(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(lang.translate('add_contact'))),
@@ -146,7 +184,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
               
               const SizedBox(height: AppSpacing.lg),
               
-              // НОВОЕ: Telegram Username
+              // Telegram Username
               TextFormField(
                 controller: _telegramController,
                 decoration: InputDecoration(
@@ -237,8 +275,8 @@ class _AddContactScreenState extends State<AddContactScreen> {
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: contactProvider.isLoading ? null : _saveContact,
-                  child: contactProvider.isLoading
+                  onPressed: _isLoading ? null : _saveContact,
+                  child: _isLoading
                       ? const SizedBox(
                           height: 24,
                           width: 24,

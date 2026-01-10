@@ -7,7 +7,7 @@ import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/sos_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/services/timer_service.dart';
-import 'package:alertme/services/location_service.dart'; // ДОБАВЛЕНО
+import 'package:alertme/services/location_service.dart';
 import 'package:alertme/screens/sos_active_screen.dart';
 
 class SafetyTimerScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class SafetyTimerScreen extends StatefulWidget {
 
 class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   final TimerService _timerService = TimerService();
-  final LocationService _locationService = LocationService(); // ДОБАВЛЕНО
+  final LocationService _locationService = LocationService();
   int _selectedMinutes = 30;
   Timer? _countdownTimer;
 
@@ -38,7 +38,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   Future<void> _loadTimer() async {
     final authProvider = context.read<AuthProvider>();
     if (authProvider.currentUser != null) {
-      await _timerService.loadTimer(authProvider.currentUser!.id.toString()); // ИСПРАВЛЕНО: добавлен .toString()
+      await _timerService.loadTimer(authProvider.currentUser!.id.toString());
       if (_timerService.hasActiveTimer) {
         _startCountdown();
       }
@@ -63,18 +63,11 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     final contactProvider = context.read<ContactProvider>();
     final sosProvider = context.read<SOSProvider>();
 
-    if (contactProvider.contacts.isEmpty) return;
-
-    await _timerService.completeTimer();
-    
-    // ИСПРАВЛЕНО: получаем местоположение и передаем параметры
-    final location = await _locationService.getCurrentLocation();
-    
-    if (location == null) {
+    if (contactProvider.contacts.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Не удалось определить местоположение'),
+            content: Text('Нет контактов для отправки SOS'),
             backgroundColor: AppColors.sosRed,
           ),
         );
@@ -82,18 +75,46 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       return;
     }
 
-    final alert = await sosProvider.triggerSOS(
-      latitude: location.latitude,
-      longitude: location.longitude,
-      address: location.address,
-      activationMethod: 'timer',
-      notes: 'Таймер безопасности истек',
-    );
+    await _timerService.completeTimer();
+    
+    try {
+      final location = await _locationService.getCurrentLocation();
+      
+      if (location == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Не удалось определить местоположение'),
+              backgroundColor: AppColors.sosRed,
+            ),
+          );
+        }
+        return;
+      }
 
-    if (alert != null && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
+      final alert = await sosProvider.triggerSOS(
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.address,
+        activationMethod: 'timer',
+        notes: 'Таймер безопасности истек',
       );
+
+      if (alert != null && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Ошибка активации SOS по таймеру: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка активации SOS: $e'),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+      }
     }
   }
 
@@ -102,7 +123,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     if (authProvider.currentUser == null) return;
 
     await _timerService.startTimer(
-      authProvider.currentUser!.id.toString(), // ИСПРАВЛЕНО: добавлен .toString()
+      authProvider.currentUser!.id.toString(),
       Duration(minutes: _selectedMinutes),
     );
     
@@ -124,115 +145,259 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(lang.translate('safety_timer'))),
-      body: Padding(
-        padding: AppSpacing.paddingXl,
-        child: hasActiveTimer && activeTimer != null
-          ? _buildActiveTimer(context, lang, activeTimer.remainingTime)
-          : _buildTimerSetup(context, lang),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: AppSpacing.paddingLg,
+          child: hasActiveTimer && activeTimer != null
+            ? _buildActiveTimer(context, lang, activeTimer.remainingTime)
+            : _buildTimerSetup(context, lang),
+        ),
       ),
     );
   }
 
   Widget _buildTimerSetup(BuildContext context, LanguageProvider lang) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.timer_outlined, size: 80, color: AppColors.deepBlue),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          lang.translate('set_timer'),
-          style: context.textStyles.headlineMedium?.semiBold,
-        ),
+        const SizedBox(height: AppSpacing.md),
+        Icon(Icons.timer_outlined, size: 64, color: AppColors.deepBlue),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          'Если вы не отменить таймер, автоматически отправится SOS',
-          style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+          lang.translate('set_timer'),
+          style: context.textStyles.headlineSmall?.semiBold,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: AppSpacing.xxl),
-        Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          alignment: WrapAlignment.center,
-          children: [15, 30, 45, 60, 90, 120].map((minutes) {
-            final isSelected = _selectedMinutes == minutes;
-            return ChoiceChip(
-              label: Text('$minutes ${lang.translate('minutes')}'),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() => _selectedMinutes = minutes);
-              },
-              selectedColor: AppColors.deepBlue,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          }).toList(),
+        const SizedBox(height: AppSpacing.sm),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Text(
+            'Если вы не отмените таймер, автоматически отправится SOS',
+            style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
         ),
-        const SizedBox(height: AppSpacing.xxl),
+        const SizedBox(height: AppSpacing.lg),
+        
+        // ✅ ИСПРАВЛЕНО: Убрана вложенность, компактная версия
+        _buildTimerCategory('Быстрые тесты', [
+          _TimerOption(label: '3 сек', seconds: 3),
+          _TimerOption(label: '5 мин', minutes: 5),
+        ]),
+        
+        const SizedBox(height: AppSpacing.sm),
+        
+        _buildTimerCategory('Стандартные', [
+          _TimerOption(label: '15 мин', minutes: 15),
+          _TimerOption(label: '30 мин', minutes: 30),
+          _TimerOption(label: '45 мин', minutes: 45),
+          _TimerOption(label: '1 час', minutes: 60),
+        ]),
+        
+        const SizedBox(height: AppSpacing.sm),
+        
+        _buildTimerCategory('Длинные', [
+          _TimerOption(label: '1.5 ч', minutes: 90),
+          _TimerOption(label: '2 ч', minutes: 120),
+        ]),
+        
+        const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
+          height: 50,
           child: ElevatedButton(
             onPressed: _startTimer,
             child: Text('Запустить таймер'),
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
       ],
     );
+  }
+
+  Widget _buildTimerCategory(String title, List<_TimerOption> options) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            title,
+            style: context.textStyles.labelMedium?.semiBold.withColor(AppColors.deepBlue),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.start,
+          children: options.map((option) {
+            final totalMinutes = option.getTotalMinutes();
+            final isSelected = _selectedMinutes == totalMinutes;
+            
+            return ChoiceChip(
+              label: Text(option.label),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() => _selectedMinutes = totalMinutes);
+              },
+              selectedColor: AppColors.deepBlue,
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  String _formatSelectedTime() {
+    // ✅ Функция больше не используется, но оставлена для совместимости
+    if (_selectedMinutes < 1) {
+      return '${(_selectedMinutes * 60).round()} секунд';
+    } else if (_selectedMinutes < 60) {
+      return '$_selectedMinutes мин';
+    } else {
+      final hours = _selectedMinutes ~/ 60;
+      final mins = _selectedMinutes % 60;
+      if (mins == 0) {
+        return '$hours час${hours > 1 ? 'а' : ''}';
+      }
+      return '$hours час${hours > 1 ? 'а' : ''} $mins мин';
+    }
   }
 
   Widget _buildActiveTimer(BuildContext context, LanguageProvider lang, Duration remaining) {
     final minutes = remaining.inMinutes;
     final seconds = remaining.inSeconds % 60;
+    
+    // ✅ Предупреждение для коротких таймеров
+    final isShortTimer = remaining.inSeconds <= 10;
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
+        const SizedBox(height: AppSpacing.xl),
         Container(
-          width: 200,
-          height: 200,
+          width: 160,
+          height: 160,
           decoration: BoxDecoration(
-            color: AppColors.softCyan.withValues(alpha: 0.1),
+            color: (isShortTimer ? AppColors.sosRed : AppColors.softCyan).withValues(alpha: 0.2),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.softCyan, width: 3),
+            border: Border.all(
+              color: isShortTimer ? AppColors.sosRed : AppColors.softCyan, 
+              width: 4
+            ),
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: context.textStyles.displayLarge?.semiBold.withColor(AppColors.deepBlue),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  lang.translate('timer_active'),
-                  style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
-                ),
-              ],
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            margin: const EdgeInsets.all(8),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                    style: context.textStyles.displayMedium?.semiBold.withColor(
+                      isShortTimer ? AppColors.sosRed : AppColors.deepBlue
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    lang.translate('timer_active'),
+                    style: context.textStyles.bodySmall?.withColor(AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          'Таймер истечёт через ${minutes}м ${seconds}с',
-          style: context.textStyles.bodyLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _cancelTimer,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.sosRed, width: 1.5),
-              foregroundColor: AppColors.sosRed,
+        
+        const SizedBox(height: AppSpacing.xl),
+        
+        if (isShortTimer)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Container(
+              padding: AppSpacing.paddingMd,
+              decoration: BoxDecoration(
+                color: AppColors.sosRed.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.sosRed),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.warning, color: AppColors.sosRed, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      '⚠️ Осталось мало времени!',
+                      style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.sosRed),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Text(lang.translate('cancel')),
+          ),
+        
+        if (!isShortTimer)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Text(
+              'Таймер истечёт через ${minutes}м ${seconds}с',
+              style: context.textStyles.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        
+        const SizedBox(height: AppSpacing.xl),
+        
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton(
+              onPressed: _cancelTimer,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.sosRed, width: 1.5),
+                foregroundColor: AppColors.sosRed,
+              ),
+              child: Text(lang.translate('cancel')),
+            ),
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
       ],
     );
+  }
+}
+
+// ✅ Вспомогательный класс для опций таймера
+class _TimerOption {
+  final String label;
+  final int minutes;
+  final int seconds;
+
+  _TimerOption({
+    required this.label, 
+    this.minutes = 0, 
+    this.seconds = 0
+  });
+
+  int getTotalMinutes() {
+    if (seconds > 0) {
+      return seconds ~/ 60; // Для секунд возвращаем дробную часть минут
+    }
+    return minutes;
   }
 }
