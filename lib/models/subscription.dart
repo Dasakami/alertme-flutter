@@ -26,20 +26,45 @@ class SubscriptionPlan {
   /// Бесплатный ли план
   bool get isFree => planType == 'free' || priceMonthly == 0;
 
-  /// Создание из JSON
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) => 
-    SubscriptionPlan(
+  /// ✅ ИСПРАВЛЕННЫЙ парсинг - обработка String и num
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
+    // Безопасное преобразование цен
+    double parsePrice(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toDouble();
+      if (value is String) {
+        final parsed = double.tryParse(value);
+        return parsed ?? 0;
+      }
+      return 0;
+    }
+
+    // Безопасное преобразование features
+    List<String> parseFeatures(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return value.map((e) => e.toString()).toList();
+      }
+      if (value is Map) {
+        // Если features это Map (JSON object), возвращаем ключи
+        return value.keys.map((e) => e.toString()).toList();
+      }
+      return [];
+    }
+
+    return SubscriptionPlan(
       id: json['id'] as int,
       name: json['name'] as String,
       planType: json['plan_type'] as String,
       description: json['description'] as String?,
-      priceMonthly: (json['price_monthly'] as num?)?.toDouble() ?? 0,
-      priceYearly: (json['price_yearly'] as num?)?.toDouble() ?? 0,
-      features: (json['features'] as List?)?.cast<String>() ?? [],
+      priceMonthly: parsePrice(json['price_monthly']),
+      priceYearly: parsePrice(json['price_yearly']),
+      features: parseFeatures(json['features']),
       maxContacts: json['max_contacts'] as int?,
       geozonesEnabled: json['geozones_enabled'] as bool? ?? false,
       locationHistoryEnabled: json['location_history_enabled'] as bool? ?? false,
     );
+  }
 
   @override
   String toString() => 'SubscriptionPlan(id: $id, name: $name, type: $planType)';
@@ -118,10 +143,21 @@ class PaymentTransaction {
     this.completedAt,
   });
 
-  factory PaymentTransaction.fromJson(Map<String, dynamic> json) => 
-    PaymentTransaction(
+  factory PaymentTransaction.fromJson(Map<String, dynamic> json) {
+    // Безопасное преобразование amount
+    double parseAmount(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toDouble();
+      if (value is String) {
+        final parsed = double.tryParse(value);
+        return parsed ?? 0;
+      }
+      return 0;
+    }
+
+    return PaymentTransaction(
       id: json['id'] as int,
-      amount: (json['amount'] as num).toDouble(),
+      amount: parseAmount(json['amount']),
       currency: json['currency'] as String? ?? 'KGS',
       paymentMethod: json['payment_method'] as String? ?? 'card',
       transactionId: json['transaction_id'] as String? ?? '',
@@ -131,4 +167,5 @@ class PaymentTransaction {
           ? DateTime.parse(json['completed_at'] as String) 
           : null,
     );
+  }
 }

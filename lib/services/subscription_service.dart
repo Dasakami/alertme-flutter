@@ -46,7 +46,7 @@ class SubscriptionService {
     }
   }
 
-  /// ✅ ИСПРАВЛЕНО: Загрузка подписки с единого API
+  /// ✅ УПРОЩЕННАЯ ЗАГРУЗКА: просто получаем данные, НЕ обновляем is_premium
   Future<void> loadCurrentSubscription() async {
     try {
       debugPrint('📡 Загрузка подписки...');
@@ -55,12 +55,10 @@ class SubscriptionService {
       
       debugPrint('📦 Получен ответ: ${data.keys}');
       
-      // Проверяем статус
       final isPremium = data['is_premium'] as bool? ?? false;
       final status = data['status'] as String?;
       
       if (isPremium && data['id'] != null) {
-        // Есть активная подписка
         _currentSubscription = UserSubscription(
           id: data['id'] as int,
           plan: SubscriptionPlan.fromJson(data['plan'] as Map<String, dynamic>),
@@ -75,13 +73,10 @@ class SubscriptionService {
           updatedAt: DateTime.now(),
         );
         
-        debugPrint('✅ Premium подписка загружена: ${_currentSubscription?.plan.name}');
-        debugPrint('   - Статус: ${_currentSubscription?.status}');
-        debugPrint('   - Дней осталось: ${_currentSubscription?.daysRemaining}');
+        debugPrint('✅ Premium подписка: ${_currentSubscription?.plan.name}');
       } else {
-        // Free план или нет подписки
         _currentSubscription = null;
-        debugPrint('ℹ️ Free план или нет подписки');
+        debugPrint('ℹ️ Free план');
       }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки подписки: $e');
@@ -89,7 +84,7 @@ class SubscriptionService {
     }
   }
 
-  /// ✅ ИСПРАВЛЕНО: Активация кода с обновлением is_premium
+  /// ✅ АКТИВАЦИЯ КОДА
   Future<bool> activateCode(String code) async {
     try {
       debugPrint('🔑 Активация кода: $code');
@@ -110,7 +105,7 @@ class SubscriptionService {
           _currentSubscription = UserSubscription(
             id: subData['id'] as int,
             plan: SubscriptionPlan(
-              id: 2, // Premium plan ID
+              id: 2,
               name: subData['plan'] as String? ?? 'Premium',
               planType: 'personal_premium',
               priceMonthly: 100,
@@ -131,7 +126,6 @@ class SubscriptionService {
         }
         
         debugPrint('✅ Код активирован успешно');
-        debugPrint('   - is_premium на сервере обновлен');
         return true;
       }
       

@@ -21,25 +21,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Загружаем подписку ОДИН РАЗ при открытии
+    // ✅ Загружаем подписку ТОЛЬКО РАЗ при открытии
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshSubscription();
+      _loadInitialData();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final subscriptionProvider = context.read<SubscriptionProvider>();
+      await subscriptionProvider.loadCurrentSubscription();
+    } catch (e) {
+      debugPrint('❌ Ошибка загрузки подписки: $e');
+    }
   }
 
   Future<void> _refreshSubscription() async {
     try {
-      // ✅ Тихое обновление (без уведомлений = без перестроения виджетов)
       await context.read<SubscriptionProvider>().loadCurrentSubscription();
-      
-      // ✅ Один setState для обновления UI
       if (mounted) {
-        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Данные обновлены'),
+            duration: Duration(seconds: 1),
+          ),
+        );
       }
-      
-      debugPrint('✅ Подписка обновлена в настройках');
     } catch (e) {
-      debugPrint('❌ Ошибка обновления подписки: $e');
+      debugPrint('❌ Ошибка обновления: $e');
     }
   }
 
@@ -47,7 +56,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
-    final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
     final user = authProvider.currentUser;
 
     if (user == null) return const SizedBox();
@@ -56,7 +64,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text(lang.translate('settings')),
         actions: [
-          // Кнопка обновления
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshSubscription,
@@ -81,11 +88,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _showLanguageDialog(context, lang),
             ),
             
-            // Подписка - ИСПРАВЛЕНО
-            _buildSubscriptionTile(context, lang, subscriptionProvider),
+            // ✅ ИСПРАВЛЕНО: Подписка БЕЗ бесконечного цикла
+            _buildSubscriptionTile(context, lang, user),
             
             // Уведомления
-            // Уведомления - ИСПРАВЛЕНО
             _buildSettingsTile(
               context,
               icon: Icons.notifications_outlined,
@@ -117,30 +123,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// ИСПРАВЛЕНО: Правильное отображение статуса подписки
+  /// ✅ ИСПРАВЛЕНО: Используем ТОЛЬКО is_premium пользователя
   Widget _buildSubscriptionTile(
     BuildContext context,
     LanguageProvider lang,
-    SubscriptionProvider provider,
+    UserModel user,
   ) {
-    // Обновляем подписку при построении
-    if (!provider.isLoading) {
-      Future.microtask(() => _refreshSubscription());
-    }
-
+    final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
+    
+    // ✅ Используем is_premium из UserModel
+    final isPremium = user.isPremium;
+    
     String subtitle;
     Color? titleColor;
     bool showArrow = false;
 
-    if (provider.isLoading) {
+    if (subscriptionProvider.isLoading) {
       subtitle = 'Загрузка...';
-    } else if (provider.isPremium) {
+    } else if (isPremium) {
       subtitle = '${lang.translate('premium')} ✅';
       titleColor = AppColors.softCyan;
       
-      // Показываем дату окончания если есть
-      if (provider.currentSubscription != null) {
-        final endDate = provider.currentSubscription!.endDate;
+      // Показываем дату окончания если есть подписка
+      if (subscriptionProvider.currentSubscription != null) {
+        final endDate = subscriptionProvider.currentSubscription!.endDate;
         subtitle += '\nДо ${endDate.day}.${endDate.month}.${endDate.year}';
       }
     } else {
@@ -152,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ListTile(
         leading: Icon(
           Icons.workspace_premium,
-          color: provider.isPremium ? AppColors.softCyan : AppColors.deepBlue,
+          color: isPremium ? AppColors.softCyan : AppColors.deepBlue,
         ),
         title: Text(
           lang.translate('subscription'),
@@ -164,12 +170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         trailing: showArrow ? const Icon(Icons.arrow_forward_ios, size: 16) : null,
         onTap: () {
-          if (!provider.isPremium) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-            ).then((_) => _refreshSubscription());
-          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+          ).then((_) => _refreshSubscription());
         },
       ),
     );
