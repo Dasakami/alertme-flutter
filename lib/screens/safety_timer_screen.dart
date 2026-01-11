@@ -102,7 +102,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
 
       if (alert != null && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
+          MaterialPageRoute(builder: (_) => SOSActiveScreen()), // БЕЗ const
         );
       }
     } catch (e) {
@@ -172,33 +172,32 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
-            'Если вы не отмените таймер, автоматически отправится SOS',
+            lang.translate('timer_description'),
             style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         
-        // ✅ ИСПРАВЛЕНО: Убрана вложенность, компактная версия
-        _buildTimerCategory('Быстрые тесты', [
-          _TimerOption(label: '3 сек', seconds: 3),
-          _TimerOption(label: '5 мин', minutes: 5),
+        _buildTimerCategory(lang.translate('quick_tests'), [
+          _TimerOption(label: '3 ${lang.translate('seconds')}', seconds: 3),
+          _TimerOption(label: '5 ${lang.translate('minutes')}', minutes: 5),
         ]),
         
         const SizedBox(height: AppSpacing.sm),
         
-        _buildTimerCategory('Стандартные', [
-          _TimerOption(label: '15 мин', minutes: 15),
-          _TimerOption(label: '30 мин', minutes: 30),
-          _TimerOption(label: '45 мин', minutes: 45),
-          _TimerOption(label: '1 час', minutes: 60),
+        _buildTimerCategory(lang.translate('standard'), [
+          _TimerOption(label: '15 ${lang.translate('minutes')}', minutes: 15),
+          _TimerOption(label: '30 ${lang.translate('minutes')}', minutes: 30),
+          _TimerOption(label: '45 ${lang.translate('minutes')}', minutes: 45),
+          _TimerOption(label: '1 ${lang.translate('hour')}', minutes: 60),
         ]),
         
         const SizedBox(height: AppSpacing.sm),
         
-        _buildTimerCategory('Длинные', [
-          _TimerOption(label: '1.5 ч', minutes: 90),
-          _TimerOption(label: '2 ч', minutes: 120),
+        _buildTimerCategory(lang.translate('long_timers'), [
+          _TimerOption(label: '1.5 ${lang.translate('hours')}', minutes: 90),
+          _TimerOption(label: '2 ${lang.translate('hours')}', minutes: 120),
         ]),
         
         const SizedBox(height: AppSpacing.lg),
@@ -207,7 +206,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
           height: 50,
           child: ElevatedButton(
             onPressed: _startTimer,
-            child: Text('Запустить таймер'),
+            child: Text(lang.translate('start_timer')),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -256,27 +255,9 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     );
   }
 
-  String _formatSelectedTime() {
-    // ✅ Функция больше не используется, но оставлена для совместимости
-    if (_selectedMinutes < 1) {
-      return '${(_selectedMinutes * 60).round()} секунд';
-    } else if (_selectedMinutes < 60) {
-      return '$_selectedMinutes мин';
-    } else {
-      final hours = _selectedMinutes ~/ 60;
-      final mins = _selectedMinutes % 60;
-      if (mins == 0) {
-        return '$hours час${hours > 1 ? 'а' : ''}';
-      }
-      return '$hours час${hours > 1 ? 'а' : ''} $mins мин';
-    }
-  }
-
   Widget _buildActiveTimer(BuildContext context, LanguageProvider lang, Duration remaining) {
     final minutes = remaining.inMinutes;
     final seconds = remaining.inSeconds % 60;
-    
-    // ✅ Предупреждение для коротких таймеров
     final isShortTimer = remaining.inSeconds <= 10;
 
     return Column(
@@ -340,7 +321,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
                   const SizedBox(width: AppSpacing.sm),
                   Flexible(
                     child: Text(
-                      '⚠️ Осталось мало времени!',
+                      lang.translate('time_warning'),
                       style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.sosRed),
                     ),
                   ),
@@ -353,7 +334,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Text(
-              'Таймер истечёт через ${minutes}м ${seconds}с',
+              '${lang.translate('time_remaining')} ${minutes}${lang.translate('minutes')} ${seconds}${lang.translate('seconds')}',
               style: context.textStyles.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -382,7 +363,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   }
 }
 
-// ✅ Вспомогательный класс для опций таймера
 class _TimerOption {
   final String label;
   final int minutes;
@@ -396,7 +376,7 @@ class _TimerOption {
 
   int getTotalMinutes() {
     if (seconds > 0) {
-      return seconds ~/ 60; // Для секунд возвращаем дробную часть минут
+      return seconds ~/ 60;
     }
     return minutes;
   }

@@ -30,7 +30,6 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
     final contactProvider = Provider.of<ContactProvider>(context);
-    final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
     final authProvider = context.read<AuthProvider>();
 
     final maxContacts = authProvider.currentUser?.isPremium == true ? 999 : 3;
@@ -61,8 +60,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       final contact = contactProvider.contacts[index];
                       return ContactCard(
                         contact: contact,
-                        onDelete: () => _deleteContact(context, contact),
-                        onSetPrimary: () => _setPrimary(context, contact.id),
+                        onDelete: () => _deleteContact(context, lang, contact),
+                        onSetPrimary: () => _setPrimary(context, lang, contact.id),
                       );
                     },
                   ),
@@ -128,16 +127,16 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
-  void _deleteContact(BuildContext context, EmergencyContact contact) {
+  void _deleteContact(BuildContext context, LanguageProvider lang, EmergencyContact contact) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Удалить контакт?'),
-        content: Text('Вы уверены, что хотите удалить ${contact.name}?'),
+        title: Text(lang.translate('delete_contact_question')),
+        content: Text('${lang.translate('delete_contact_confirm')} ${contact.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
+            child: Text(lang.translate('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -145,29 +144,29 @@ class _ContactsScreenState extends State<ContactsScreen> {
               final ok = await context.read<ContactProvider>().deleteContact(contact.id);
               if (context.mounted && !ok) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Ошибка удаления'),
+                  SnackBar(
+                    content: Text(lang.translate('delete_error')),
                     backgroundColor: AppColors.sosRed,
                   ),
                 );
               }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.sosRed),
-            child: const Text('Удалить'),
+            child: Text(lang.translate('delete')),
           ),
         ],
       ),
     );
   }
 
-  void _setPrimary(BuildContext context, int contactId) async {
+  void _setPrimary(BuildContext context, LanguageProvider lang, int contactId) async {
     final ok = await context.read<ContactProvider>().setPrimary(contactId);
     if (!context.mounted) return;
     
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Основной контакт установлен'),
+        SnackBar(
+          content: Text(lang.translate('primary_set')),
           backgroundColor: AppColors.softCyan,
         ),
       );
@@ -179,7 +178,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(lang.translate('contact_limit_reached')),
-        content: Text('Вы достигли лимита в $limit контактов. ${lang.translate('upgrade_for_more')}'),
+        content: Text('${lang.translate('total_contacts')}: $limit. ${lang.translate('upgrade_for_more')}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -190,7 +189,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => SubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
               );
             },
             child: Text(lang.translate('upgrade_to_premium')),
@@ -205,24 +204,24 @@ class _ContactsScreenState extends State<ContactsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Информация'),
+        title: Text(lang.translate('information')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Всего контактов: ${contacts.length}'),
-            Text('Лимит: $limit'),
+            Text('${lang.translate('total_contacts')} ${contacts.length}'),
+            Text('${lang.translate('limit')} $limit'),
             const SizedBox(height: AppSpacing.md),
-            const Text(
-              'Основной контакт будет получать уведомления первым.',
-              style: TextStyle(fontSize: 12),
+            Text(
+              lang.translate('primary_contact_info'),
+              style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ОК'),
+            child: Text(lang.translate('ok')),
           ),
         ],
       ),

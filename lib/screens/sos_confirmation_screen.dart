@@ -1,9 +1,10 @@
+// sos_confirmation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
-import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/contact_provider.dart';
 import 'package:alertme/providers/sos_provider.dart';
+import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/services/location_service.dart';
 import 'package:alertme/services/audio_service.dart';
 import 'package:alertme/screens/sos_active_screen.dart';
@@ -64,12 +65,11 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     setState(() => _isRecording = false);
   }
 
-  /// ✅ ИСПРАВЛЕНО: Активация SOS
   Future<void> _activateSOS(BuildContext context) async {
     final sosProvider = context.read<SOSProvider>();
     final locationService = LocationService();
+    final lang = context.read<LanguageProvider>();
 
-    // Останавливаем запись если идет
     String? audioPath;
     if (_isRecording) {
       audioPath = await _audioService.stopRecording();
@@ -77,9 +77,6 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
       audioPath = _audioService.recordingPath;
     }
 
-    debugPrint('🎤 Путь к аудио: $audioPath');
-
-    // Показываем загрузку
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -90,15 +87,16 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     );
 
     try {
-      // 1. Получаем местоположение
       final location = await locationService.getCurrentLocation();
       
       if (location == null) {
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Не удалось определить местоположение'),
+            SnackBar(
+              content: Text(lang.isRussian 
+                ? 'Не удалось определить местоположение'
+                : 'Жайгашкан жерди аныктоо мүмкүн болгон жок'),
               backgroundColor: AppColors.sosRed,
             ),
           );
@@ -106,14 +104,13 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
         return;
       }
 
-      // 2. ✅ ИСПРАВЛЕНО: Активируем SOS с правильным названием параметра
       final alert = await sosProvider.triggerSOS(
         latitude: location.latitude,
         longitude: location.longitude,
         address: location.address,
         activationMethod: 'button',
-        notes: audioPath != null ? 'С аудиозаписью' : null,
-        audioPath: audioPath,  // ← ИСПРАВЛЕНО: audioPath вместо audioFilePath
+        notes: audioPath != null ? (lang.isRussian ? 'С аудиозаписью' : 'Аудио менен') : null,
+        audioPath: audioPath,
       );
 
       if (alert == null) {
@@ -121,7 +118,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(sosProvider.error ?? 'Ошибка активации'),
+              content: Text(sosProvider.error ?? lang.translate('activation_error')),
               backgroundColor: AppColors.sosRed,
             ),
           );
@@ -129,13 +126,9 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
         return;
       }
 
-      debugPrint('✅ SOS создан с ID: ${alert.id}');
-      debugPrint('✅ Аудио отправлено: ${audioPath != null}');
-
-      // 3. Переходим на экран активного SOS
       if (context.mounted) {
-        Navigator.pop(context); // Закрываем загрузку
-        Navigator.pop(context); // Закрываем экран подтверждения
+        Navigator.pop(context);
+        Navigator.pop(context);
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
@@ -147,7 +140,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка: $e'),
+            content: Text('${lang.translate('error')}: $e'),
             backgroundColor: AppColors.sosRed,
           ),
         );
@@ -158,6 +151,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
   @override
   Widget build(BuildContext context) {
     final contactProvider = context.watch<ContactProvider>();
+    final lang = context.watch<LanguageProvider>();
     
     return Scaffold(
       backgroundColor: AppColors.sosRed,
@@ -176,7 +170,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
               const SizedBox(height: AppSpacing.xxl),
               
               Text(
-                'Активировать SOS?',
+                lang.translate('activate_sos_question'),
                 style: context.textStyles.displaySmall?.semiBold
                     .withColor(Colors.white),
                 textAlign: TextAlign.center,
@@ -184,7 +178,6 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
               
               const SizedBox(height: AppSpacing.lg),
               
-              // Индикатор записи
               if (_isRecording) ...[
                 Container(
                   padding: AppSpacing.paddingMd,
@@ -205,7 +198,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
-                        'Запись аудио: ${_recordingSeconds}с / 30с',
+                        '${lang.translate('recording_audio')}: ${_recordingSeconds}${lang.translate('seconds')} / 30${lang.translate('seconds')}',
                         style: context.textStyles.bodyLarge?.semiBold
                             .withColor(Colors.white),
                       ),
@@ -225,27 +218,31 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Будет отправлено:',
+                      lang.translate('will_be_sent'),
                       style: context.textStyles.bodyLarge?.semiBold
                           .withColor(Colors.white),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _buildActionItem(
                       Icons.sms,
-                      'SMS всем контактам (${contactProvider.contacts.length})',
+                      '${lang.translate('sms_to_contacts')} (${contactProvider.contacts.length})',
+                      lang,
                     ),
                     _buildActionItem(
                       Icons.email,
-                      'Email с медиа файлами',
+                      lang.translate('email_with_media'),
+                      lang,
                     ),
                     _buildActionItem(
                       Icons.location_on,
-                      'Ваше местоположение',
+                      lang.translate('your_location'),
+                      lang,
                     ),
                     if (_isRecording || _audioService.recordingPath != null)
                       _buildActionItem(
                         Icons.mic,
-                        'Аудиозапись (${_recordingSeconds}с)',
+                        '${lang.translate('audio_recording')} (${_recordingSeconds}${lang.translate('seconds')})',
+                        lang,
                       ),
                   ],
                 ),
@@ -267,7 +264,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                           side: const BorderSide(color: Colors.white, width: 2),
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Отмена'),
+                        child: Text(lang.translate('cancel')),
                       ),
                     ),
                   ),
@@ -282,7 +279,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                           backgroundColor: Colors.white,
                           foregroundColor: AppColors.sosRed,
                         ),
-                        child: const Text('АКТИВИРОВАТЬ'),
+                        child: Text(lang.translate('activate')),
                       ),
                     ),
                   ),
@@ -295,7 +292,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     );
   }
 
-  Widget _buildActionItem(IconData icon, String text) {
+  Widget _buildActionItem(IconData icon, String text, LanguageProvider lang) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(

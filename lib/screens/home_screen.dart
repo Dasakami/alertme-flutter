@@ -10,7 +10,7 @@ import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/contacts_screen.dart';
 import 'package:alertme/screens/safety_timer_screen.dart';
 import 'package:alertme/screens/settings_screen.dart';
-import 'package:alertme/screens/sos_confirmation_screen.dart';  // НОВОЕ
+import 'package:alertme/screens/sos_confirmation_screen.dart';  // ЕДИНСТВЕННЫЙ импорт для SOS
 import 'package:alertme/widgets/sos_button.dart';
 import 'package:alertme/widgets/mini_map.dart';
 import 'package:alertme/widgets/quick_action_button.dart';
@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Открываем экран подтверждения
+    // Открываем экран подтверждения БЕЗ const
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const SOSConfirmationScreen(),
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'SOS активен',
+                                lang.translate('sos_active'),
                                 style: context.textStyles.labelSmall?.withColor(
                                   Colors.white,
                                 ),

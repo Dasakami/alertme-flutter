@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
+import 'package:alertme/providers/language_provider.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -43,6 +44,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final lang = context.read<LanguageProvider>();
     
     try {
       await authProvider.updateProfile(
@@ -55,8 +57,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Профиль обновлен'),
+          SnackBar(
+            content: Text(lang.translate('profile_updated')),
             backgroundColor: AppColors.softCyan,
           ),
         );
@@ -65,7 +67,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Ошибка: $e'),
+            content: Text('${lang.translate('error')}: $e'),
             backgroundColor: AppColors.sosRed,
           ),
         );
@@ -76,9 +78,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final lang = context.watch<LanguageProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Редактировать профиль')),
+      appBar: AppBar(title: Text(lang.translate('edit_profile'))),
       body: SingleChildScrollView(
         padding: AppSpacing.paddingLg,
         child: Form(
@@ -88,9 +91,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             children: [
               TextFormField(
                 controller: _firstNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Имя',
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: lang.translate('first_name'),
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
               ),
               
@@ -98,9 +101,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               
               TextFormField(
                 controller: _lastNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Фамилия',
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: lang.translate('last_name'),
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
               ),
               
@@ -109,21 +112,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
+                decoration: InputDecoration(
+                  labelText: lang.translate('email_optional'),
+                  prefixIcon: const Icon(Icons.email_outlined),
                 ),
               ),
               
               const SizedBox(height: AppSpacing.md),
               
-              // TELEGRAM USERNAME
               TextFormField(
                 controller: _telegramController,
                 decoration: InputDecoration(
-                  labelText: 'Telegram Username',
+                  labelText: lang.translate('telegram_username'),
                   hintText: 'username',
-                  helperText: 'Без @. Для получения SOS уведомлений',
+                  helperText: lang.translate('telegram_hint'),
                   prefixIcon: const Icon(Icons.alternate_email),
                 ),
                 inputFormatters: [
@@ -132,10 +134,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (value.length < 5) {
-                      return 'Минимум 5 символов';
+                      return lang.translate('min_5_chars');
                     }
                     if (value.startsWith('@')) {
-                      return 'Не указывайте @';
+                      return lang.translate('no_at_symbol');
                     }
                   }
                   return null;
@@ -159,17 +161,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         const Icon(Icons.info_outline, color: AppColors.softCyan, size: 20),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          'Как это работает:',
+                          lang.translate('telegram_how_it_works'),
                           style: context.textStyles.labelLarge?.semiBold.withColor(AppColors.deepBlue),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      '1. Найдите бот @AlertMePremiumBot в Telegram\n'
-                      '2. Нажмите /start\n'
-                      '3. Введите ваш username здесь\n'
-                      '4. SOS уведомления будут приходить в Telegram!',
+                      '1. ${lang.translate('telegram_step_1')}\n'
+                      '2. ${lang.translate('telegram_step_2')}\n'
+                      '3. ${lang.translate('telegram_step_3')}\n'
+                      '4. ${lang.translate('telegram_step_4')}',
                       style: context.textStyles.bodySmall,
                     ),
                   ],
@@ -191,7 +193,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('Сохранить'),
+                      : Text(lang.translate('save')),
                 ),
               ),
             ],

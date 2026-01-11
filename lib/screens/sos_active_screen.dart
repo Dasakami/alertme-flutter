@@ -46,7 +46,7 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final lang = Provider.of<LanguageProvider>(context);
     final sosProvider = Provider.of<SOSProvider>(context);
-    final activeAlert = sosProvider.activeAlert; // ИСПРАВЛЕНО: activeEvent -> activeAlert
+    final activeAlert = sosProvider.activeAlert;
 
     return Scaffold(
       backgroundColor: AppColors.sosRed,
@@ -58,7 +58,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
             children: [
               const Spacer(),
               
-              // Анимированная иконка
               AnimatedBuilder(
                 animation: _pulseAnimation,
                 builder: (context, child) => Transform.scale(
@@ -78,7 +77,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
               
               const SizedBox(height: AppSpacing.xxl),
               
-              // Заголовок
               Text(
                 lang.translate('sos_activated'),
                 style: context.textStyles.displaySmall?.semiBold.withColor(Colors.white),
@@ -87,7 +85,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
               
               const SizedBox(height: AppSpacing.lg),
               
-              // Статус
               Text(
                 lang.translate('sending_alert'),
                 style: context.textStyles.bodyLarge?.withColor(Colors.white.withValues(alpha: 0.9)),
@@ -96,7 +93,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
               
               const SizedBox(height: AppSpacing.xl),
               
-              // Индикатор записи
               Container(
                 padding: AppSpacing.paddingMd,
                 decoration: BoxDecoration(
@@ -116,7 +112,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                 ),
               ),
               
-              // Местоположение
               if (activeAlert?.latitude != null && activeAlert?.longitude != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Container(
@@ -132,7 +127,7 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                       const SizedBox(width: AppSpacing.sm),
                       Flexible(
                         child: Text(
-                          activeAlert?.address ?? 'Местоположение отправлено',
+                          activeAlert?.address ?? lang.translate('location_sent'),
                           style: context.textStyles.bodyMedium?.withColor(Colors.white),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -144,7 +139,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                 ),
               ],
               
-              // Список уведомлений
               if (activeAlert?.notifications.isNotEmpty ?? false) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Container(
@@ -159,7 +153,7 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
                       const Icon(Icons.notifications, color: Colors.white, size: 20),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Уведомлено контактов: ${activeAlert!.notifications.length}',
+                        '${lang.translate('contacts_notified')} ${activeAlert!.notifications.length}',
                         style: context.textStyles.bodyMedium?.withColor(Colors.white),
                         textAlign: TextAlign.center,
                       ),
@@ -170,7 +164,6 @@ class _SOSActiveScreenState extends State<SOSActiveScreen> with SingleTickerProv
               
               const Spacer(),
               
-              // Кнопка отмены
               SizedBox(
                 width: double.infinity,
                 height: 56,

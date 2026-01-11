@@ -34,12 +34,12 @@ class _AddContactScreenState extends State<AddContactScreen> {
     super.dispose();
   }
 
-  /// ✅ УЛУЧШЕНО: Обработка всех ошибок
   Future<void> _saveContact() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
+    final lang = context.read<LanguageProvider>();
     final contact = EmergencyContact(
       id: 0,
       name: _nameController.text,
@@ -60,10 +60,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
 
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Контакт добавлен'),
+        SnackBar(
+          content: Text(lang.translate('contact_added')),
           backgroundColor: AppColors.softCyan,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     } on ApiException catch (e) {
@@ -71,16 +71,14 @@ class _AddContactScreenState extends State<AddContactScreen> {
       
       setState(() => _isLoading = false);
       
-      // ✅ Показываем понятное сообщение об ошибке
       String errorMessage = e.message;
       
-      // Переводим распространенные ошибки
       if (e.message.toLowerCase().contains('unique') || 
           e.message.toLowerCase().contains('duplicate')) {
-        errorMessage = 'Контакт с таким номером уже добавлен';
+        errorMessage = lang.translate('contact_exists');
       } else if (e.message.toLowerCase().contains('maximum') || 
                  e.message.toLowerCase().contains('limit')) {
-        errorMessage = 'Достигнут лимит контактов';
+        errorMessage = lang.translate('limit_reached');
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +87,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
           backgroundColor: AppColors.sosRed,
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
-            label: 'ОК',
+            label: lang.translate('ok'),
             textColor: Colors.white,
             onPressed: () {},
           ),
@@ -102,7 +100,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Ошибка: ${e.toString()}'),
+          content: Text('❌ ${lang.translate('error')}: ${e.toString()}'),
           backgroundColor: AppColors.sosRed,
           duration: const Duration(seconds: 3),
         ),
@@ -128,12 +126,12 @@ class _AddContactScreenState extends State<AddContactScreen> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: lang.translate('name'),
-                  hintText: 'Иван Иванов',
+                  hintText: lang.isRussian ? 'Иван Иванов' : 'Асан Усенов',
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите имя';
+                    return lang.translate('enter_name');
                   }
                   return null;
                 },
@@ -170,10 +168,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Введите номер';
+                          return lang.translate('enter_number');
                         }
                         if (value.length != 9) {
-                          return 'Неверный формат';
+                          return lang.translate('invalid_format');
                         }
                         return null;
                       },
@@ -188,9 +186,9 @@ class _AddContactScreenState extends State<AddContactScreen> {
               TextFormField(
                 controller: _telegramController,
                 decoration: InputDecoration(
-                  labelText: 'Telegram Username (необязательно)',
+                  labelText: lang.translate('telegram_username'),
                   hintText: 'username',
-                  helperText: 'Без @. Для SOS уведомлений',
+                  helperText: lang.translate('telegram_hint'),
                   prefixIcon: const Icon(Icons.alternate_email),
                 ),
                 inputFormatters: [
@@ -199,10 +197,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (value.length < 5) {
-                      return 'Минимум 5 символов';
+                      return lang.translate('min_5_chars');
                     }
                     if (value.startsWith('@')) {
-                      return 'Не указывайте @';
+                      return lang.translate('no_at_symbol');
                     }
                   }
                   return null;
@@ -215,10 +213,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email (необязательно)',
+                decoration: InputDecoration(
+                  labelText: lang.translate('email_optional'),
                   hintText: 'ivan@example.com',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  prefixIcon: const Icon(Icons.email_outlined),
                 ),
               ),
               
@@ -227,10 +225,10 @@ class _AddContactScreenState extends State<AddContactScreen> {
               // Отношение
               TextFormField(
                 controller: _relationController,
-                decoration: const InputDecoration(
-                  labelText: 'Отношение (необязательно)',
-                  hintText: 'Друг, Родственник, Коллега',
-                  prefixIcon: Icon(Icons.favorite_outline),
+                decoration: InputDecoration(
+                  labelText: lang.translate('relation_optional'),
+                  hintText: lang.translate('relation_hint'),
+                  prefixIcon: const Icon(Icons.favorite_outline),
                 ),
               ),
               
@@ -240,8 +238,8 @@ class _AddContactScreenState extends State<AddContactScreen> {
               CheckboxListTile(
                 value: _isPrimary,
                 onChanged: (value) => setState(() => _isPrimary = value ?? false),
-                title: const Text('Основной контакт'),
-                subtitle: const Text('Будет получать уведомления первым'),
+                title: Text(lang.translate('primary_contact')),
+                subtitle: Text(lang.translate('primary_contact_desc')),
                 contentPadding: EdgeInsets.zero,
               ),
               
@@ -261,7 +259,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        'Если у контакта есть Telegram, SOS уведомления придут туда',
+                        lang.translate('telegram_info'),
                         style: context.textStyles.bodySmall,
                       ),
                     ),

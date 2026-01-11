@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:alertme/theme.dart';
+import 'package:alertme/providers/language_provider.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
@@ -11,10 +13,6 @@ class NotificationsSettingsScreen extends StatefulWidget {
 
 class _NotificationsSettingsScreenState extends State<NotificationsSettingsScreen> {
   bool _sosAlerts = true;
-  bool _timerAlerts = true;
-  bool _geozoneAlerts = true;
-  bool _pushNotifications = true;
-  bool _smsNotifications = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
 
@@ -29,10 +27,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
     
     setState(() {
       _sosAlerts = prefs.getBool('notif_sos') ?? true;
-      _timerAlerts = prefs.getBool('notif_timer') ?? true;
-      _geozoneAlerts = prefs.getBool('notif_geozone') ?? true;
-      _pushNotifications = prefs.getBool('notif_push') ?? true;
-      _smsNotifications = prefs.getBool('notif_sms') ?? true;
       _soundEnabled = prefs.getBool('notif_sound') ?? true;
       _vibrationEnabled = prefs.getBool('notif_vibration') ?? true;
     });
@@ -45,97 +39,82 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<LanguageProvider>();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Настройки уведомлений'),
+        title: Text(lang.translate('notifications_settings')),
       ),
       body: ListView(
         padding: AppSpacing.paddingLg,
         children: [
-          // Типы уведомлений
-          _buildSectionHeader('Типы уведомлений'),
-          _buildSwitchTile(
-            title: 'SOS сигналы',
-            subtitle: 'Уведомления об экстренных ситуациях',
-            icon: Icons.emergency,
-            value: _sosAlerts,
-            onChanged: (value) {
-              setState(() => _sosAlerts = value);
-              _saveSetting('notif_sos', value);
-            },
-          ),
-          _buildSwitchTile(
-            title: 'Таймеры безопасности',
-            subtitle: 'Истечение таймеров активности',
-            icon: Icons.timer,
-            value: _timerAlerts,
-            onChanged: (value) {
-              setState(() => _timerAlerts = value);
-              _saveSetting('notif_timer', value);
-            },
-          ),
-          _buildSwitchTile(
-            title: 'Геозоны',
-            subtitle: 'Вход/выход из безопасных зон',
-            icon: Icons.location_on,
-            value: _geozoneAlerts,
-            onChanged: (value) {
-              setState(() => _geozoneAlerts = value);
-              _saveSetting('notif_geozone', value);
-            },
+          // SOS уведомления
+          Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.emergency, color: AppColors.sosRed),
+              title: Text(
+                lang.translate('sos_alerts'),
+                style: context.textStyles.bodyMedium?.semiBold,
+              ),
+              subtitle: Text(
+                lang.translate('sos_alerts_desc'),
+                style: context.textStyles.bodySmall,
+              ),
+              value: _sosAlerts,
+              onChanged: (value) {
+                setState(() => _sosAlerts = value);
+                _saveSetting('notif_sos', value);
+              },
+              activeColor: AppColors.deepBlue,
+            ),
           ),
           
-          const SizedBox(height: AppSpacing.lg),
-          
-          // Каналы уведомлений
-          _buildSectionHeader('Каналы уведомлений'),
-          _buildSwitchTile(
-            title: 'Push-уведомления',
-            subtitle: 'Уведомления в приложении',
-            icon: Icons.notifications,
-            value: _pushNotifications,
-            onChanged: (value) {
-              setState(() => _pushNotifications = value);
-              _saveSetting('notif_push', value);
-            },
-          ),
-          _buildSwitchTile(
-            title: 'SMS уведомления',
-            subtitle: 'Отправка SMS экстренным контактам',
-            icon: Icons.sms,
-            value: _smsNotifications,
-            onChanged: (value) {
-              setState(() => _smsNotifications = value);
-              _saveSetting('notif_sms', value);
-            },
+          // Звук
+          Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.volume_up, color: AppColors.deepBlue),
+              title: Text(
+                lang.translate('sound'),
+                style: context.textStyles.bodyMedium?.semiBold,
+              ),
+              subtitle: Text(
+                lang.translate('sound_desc'),
+                style: context.textStyles.bodySmall,
+              ),
+              value: _soundEnabled,
+              onChanged: (value) {
+                setState(() => _soundEnabled = value);
+                _saveSetting('notif_sound', value);
+              },
+              activeColor: AppColors.deepBlue,
+            ),
           ),
           
-          const SizedBox(height: AppSpacing.lg),
-          
-          // Поведение
-          _buildSectionHeader('Поведение'),
-          _buildSwitchTile(
-            title: 'Звук',
-            subtitle: 'Звуковые сигналы при уведомлениях',
-            icon: Icons.volume_up,
-            value: _soundEnabled,
-            onChanged: (value) {
-              setState(() => _soundEnabled = value);
-              _saveSetting('notif_sound', value);
-            },
-          ),
-          _buildSwitchTile(
-            title: 'Вибрация',
-            subtitle: 'Вибрация при уведомлениях',
-            icon: Icons.vibration,
-            value: _vibrationEnabled,
-            onChanged: (value) {
-              setState(() => _vibrationEnabled = value);
-              _saveSetting('notif_vibration', value);
-            },
+          // Вибрация
+          Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.vibration, color: AppColors.deepBlue),
+              title: Text(
+                lang.translate('vibration'),
+                style: context.textStyles.bodyMedium?.semiBold,
+              ),
+              subtitle: Text(
+                lang.translate('vibration_desc'),
+                style: context.textStyles.bodySmall,
+              ),
+              value: _vibrationEnabled,
+              onChanged: (value) {
+                setState(() => _vibrationEnabled = value);
+                _saveSetting('notif_vibration', value);
+              },
+              activeColor: AppColors.deepBlue,
+            ),
           ),
           
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           
           // Информация
           Container(
@@ -151,7 +130,7 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    'SOS уведомления всегда отправляются вне зависимости от настроек',
+                    lang.translate('sos_always_sent'),
                     style: context.textStyles.bodySmall,
                   ),
                 ),
@@ -166,9 +145,9 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
             width: double.infinity,
             height: 48,
             child: OutlinedButton.icon(
-              onPressed: _testNotification,
+              onPressed: () => _testNotification(lang),
               icon: const Icon(Icons.send),
-              label: const Text('Отправить тестовое уведомление'),
+              label: Text(lang.translate('send_test_notification')),
             ),
           ),
         ],
@@ -176,44 +155,14 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Text(
-        title,
-        style: context.textStyles.titleMedium?.semiBold
-            .withColor(AppColors.deepBlue),
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Card(
-      child: SwitchListTile(
-        secondary: Icon(icon, color: AppColors.deepBlue),
-        title: Text(title, style: context.textStyles.bodyLarge),
-        subtitle: Text(subtitle, style: context.textStyles.bodySmall),
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.deepBlue,
-      ),
-    );
-  }
-
-  void _testNotification() {
+  void _testNotification(LanguageProvider lang) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: AppSpacing.sm),
-            Text('Тестовое уведомление отправлено'),
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: AppSpacing.sm),
+            Text(lang.translate('test_notification_sent')),
           ],
         ),
         backgroundColor: AppColors.softCyan,

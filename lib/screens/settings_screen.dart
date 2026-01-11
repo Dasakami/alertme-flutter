@@ -21,7 +21,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Загружаем подписку ТОЛЬКО РАЗ при открытии
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -37,13 +36,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _refreshSubscription() async {
+    final lang = context.read<LanguageProvider>();
     try {
       await context.read<SubscriptionProvider>().loadCurrentSubscription();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Данные обновлены'),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(lang.translate('data_updated')),
+            duration: const Duration(seconds: 1),
           ),
         );
       }
@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshSubscription,
-            tooltip: 'Обновить',
+            tooltip: lang.translate('refresh'),
           ),
         ],
       ),
@@ -76,27 +76,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
           padding: AppSpacing.paddingLg,
           children: [
-            _buildProfileCard(context, user),
+            _buildProfileCard(context, lang, user),
             const SizedBox(height: AppSpacing.lg),
             
             // Язык
             _buildSettingsTile(
               context,
+              lang,
               icon: Icons.language,
               title: lang.translate('language'),
               subtitle: lang.isRussian ? 'Русский' : 'Кыргызча',
               onTap: () => _showLanguageDialog(context, lang),
             ),
             
-            // ✅ ИСПРАВЛЕНО: Подписка БЕЗ бесконечного цикла
+            // Подписка
             _buildSubscriptionTile(context, lang, user),
             
             // Уведомления
             _buildSettingsTile(
               context,
+              lang,
               icon: Icons.notifications_outlined,
               title: lang.translate('notifications'),
-              subtitle: 'Настройка уведомлений',
+              subtitle: lang.translate('notifications_settings'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -112,10 +114,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Выход
             _buildSettingsTile(
               context,
+              lang,
               icon: Icons.logout,
               title: lang.translate('logout'),
               titleColor: AppColors.sosRed,
-              onTap: () => _logout(context, authProvider),
+              onTap: () => _logout(context, lang, authProvider),
             ),
           ],
         ),
@@ -123,15 +126,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// ✅ ИСПРАВЛЕНО: Используем ТОЛЬКО is_premium пользователя
   Widget _buildSubscriptionTile(
     BuildContext context,
     LanguageProvider lang,
     UserModel user,
   ) {
     final subscriptionProvider = Provider.of<SubscriptionProvider>(context);
-    
-    // ✅ Используем is_premium из UserModel
     final isPremium = user.isPremium;
     
     String subtitle;
@@ -139,15 +139,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool showArrow = false;
 
     if (subscriptionProvider.isLoading) {
-      subtitle = 'Загрузка...';
+      subtitle = lang.translate('loading');
     } else if (isPremium) {
       subtitle = '${lang.translate('premium')} ✅';
       titleColor = AppColors.softCyan;
       
-      // Показываем дату окончания если есть подписка
       if (subscriptionProvider.currentSubscription != null) {
         final endDate = subscriptionProvider.currentSubscription!.endDate;
-        subtitle += '\nДо ${endDate.day}.${endDate.month}.${endDate.year}';
+        final days = subscriptionProvider.currentSubscription!.daysRemaining;
+        subtitle += '\n${lang.translate('valid_until')} ${endDate.day}.${endDate.month}.${endDate.year}';
+        subtitle += ' (${lang.translate('days_remaining')}: $days ${lang.translate('days')})';
       }
     } else {
       subtitle = lang.translate('free');
@@ -179,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, UserModel user) {
+  Widget _buildProfileCard(BuildContext context, LanguageProvider lang, UserModel user) {
     return Card(
       child: Padding(
         padding: AppSpacing.paddingLg,
@@ -236,7 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 },
                 icon: const Icon(Icons.edit),
-                label: const Text('Редактировать профиль'),
+                label: Text(lang.translate('edit_profile')),
               ),
             ),
           ],
@@ -246,7 +247,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingsTile(
-    BuildContext context, {
+    BuildContext context,
+    LanguageProvider lang, {
     required IconData icon,
     required String title,
     String? subtitle,
@@ -306,16 +308,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _logout(BuildContext context, AuthProvider authProvider) {
+  void _logout(BuildContext context, LanguageProvider lang, AuthProvider authProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Выйти'),
-        content: const Text('Вы уверены, что хотите выйти?'),
+        title: Text(lang.translate('logout_question')),
+        content: Text(lang.translate('logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
+            child: Text(lang.translate('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -328,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.sosRed),
-            child: const Text('Выйти'),
+            child: Text(lang.translate('logout')),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/subscription_provider.dart';
 import 'package:alertme/providers/auth_provider.dart';
+import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/activation_code_screen.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -29,16 +30,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final subscriptionProvider = context.watch<SubscriptionProvider>();
+    final lang = context.watch<LanguageProvider>();
     final user = authProvider.currentUser;
 
-    if (user == null) return const Scaffold(body: Center(child: Text('Ошибка загрузки')));
+    if (user == null) return Scaffold(body: Center(child: Text(lang.translate('error'))));
 
-    // ✅ Проверяем is_premium пользователя
     final isPremium = user.isPremium;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Подписка'),
+        title: Text(lang.translate('subscription')),
       ),
       body: subscriptionProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -47,32 +48,28 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ✅ СТАТУС ПОДПИСКИ
                   if (isPremium) 
-                    _buildActivePremiumCard(subscriptionProvider)
+                    _buildActivePremiumCard(subscriptionProvider, lang)
                   else 
-                    _buildFreeStatusCard(),
+                    _buildFreeStatusCard(lang),
                   
                   const SizedBox(height: AppSpacing.xl),
                   
-                  // ✅ КНОПКА АКТИВАЦИИ КОДА
                   if (!isPremium)
-                    _buildActivateCodeButton(context)
+                    _buildActivateCodeButton(context, lang)
                   else
-                    _buildExtendSubscriptionButton(context),
+                    _buildExtendSubscriptionButton(context, lang),
                   
                   const SizedBox(height: AppSpacing.xl),
                   
-                  // Преимущества Premium
-                  _buildFeaturesList(),
+                  _buildFeaturesList(lang),
                 ],
               ),
             ),
     );
   }
 
-  /// ✅ КАРТОЧКА АКТИВНОЙ ПОДПИСКИ
-  Widget _buildActivePremiumCard(SubscriptionProvider provider) {
+  Widget _buildActivePremiumCard(SubscriptionProvider provider, LanguageProvider lang) {
     final subscription = provider.currentSubscription;
     final endDate = subscription?.endDate;
     
@@ -102,20 +99,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '✨ Premium Активен',
+            lang.translate('premium_active'),
             style: context.textStyles.headlineSmall?.semiBold.withColor(Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.sm),
           if (endDate != null) ...[
             Text(
-              'Действует до ${endDate.day}.${endDate.month}.${endDate.year}',
+              '${lang.translate('valid_until')} ${endDate.day}.${endDate.month}.${endDate.year}',
               style: context.textStyles.bodyLarge?.withColor(Colors.white70),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Осталось ${subscription?.daysRemaining ?? 0} дней',
+              '${lang.translate('days_remaining')}: ${subscription?.daysRemaining ?? 0} ${lang.translate('days')}',
               style: context.textStyles.bodyMedium?.semiBold.withColor(Colors.white),
               textAlign: TextAlign.center,
             ),
@@ -125,8 +122,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  /// ✅ КАРТОЧКА FREE ПЛАНА
-  Widget _buildFreeStatusCard() {
+  Widget _buildFreeStatusCard(LanguageProvider lang) {
     return Container(
       padding: AppSpacing.paddingXl,
       decoration: BoxDecoration(
@@ -143,13 +139,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Free План',
+            lang.translate('free_plan'),
             style: context.textStyles.headlineSmall?.semiBold,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Активируйте Premium для полного доступа',
+            lang.translate('activate_premium'),
             style: context.textStyles.bodyLarge?.withColor(AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
@@ -158,8 +154,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  /// ✅ КНОПКА АКТИВАЦИИ КОДА (для Free пользователей)
-  Widget _buildActivateCodeButton(BuildContext context) {
+  Widget _buildActivateCodeButton(BuildContext context, LanguageProvider lang) {
     return SizedBox(
       height: 56,
       child: ElevatedButton.icon(
@@ -170,7 +165,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           );
         },
         icon: const Icon(Icons.vpn_key),
-        label: const Text('Активировать код из Telegram'),
+        label: Text(lang.translate('activate_code')),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.softCyan,
         ),
@@ -178,8 +173,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  /// ✅ КНОПКА ПРОДЛЕНИЯ (для Premium пользователей)
-  Widget _buildExtendSubscriptionButton(BuildContext context) {
+  Widget _buildExtendSubscriptionButton(BuildContext context, LanguageProvider lang) {
     return SizedBox(
       height: 56,
       child: OutlinedButton.icon(
@@ -190,7 +184,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Продлить подписку'),
+        label: Text(lang.translate('extend_subscription')),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.softCyan,
           side: const BorderSide(color: AppColors.softCyan, width: 2),
@@ -199,35 +193,34 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  /// Список преимуществ Premium
-  Widget _buildFeaturesList() {
+  Widget _buildFeaturesList(LanguageProvider lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Преимущества Premium:',
+          lang.translate('premium_benefits'),
           style: context.textStyles.titleLarge?.semiBold,
         ),
         const SizedBox(height: AppSpacing.md),
         _buildFeatureItem(
           icon: Icons.people,
-          title: 'Неограниченное количество контактов',
-          description: 'Добавляйте сколько угодно близких',
+          title: lang.translate('unlimited_contacts'),
+          description: lang.translate('unlimited_contacts_desc'),
         ),
         _buildFeatureItem(
           icon: Icons.location_on,
-          title: 'Геозоны',
-          description: 'Уведомления при входе/выходе из зон',
+          title: lang.translate('geozones'),
+          description: lang.translate('geozones_desc'),
         ),
         _buildFeatureItem(
           icon: Icons.history,
-          title: 'История местоположений',
-          description: 'Просмотр истории передвижений',
+          title: lang.translate('location_history'),
+          description: lang.translate('location_history_desc'),
         ),
         _buildFeatureItem(
           icon: Icons.telegram,
-          title: 'SOS в Telegram',
-          description: 'Мгновенные уведомления в мессенджер',
+          title: lang.translate('telegram_sos'),
+          description: lang.translate('telegram_sos_desc'),
         ),
       ],
     );
