@@ -12,7 +12,7 @@ class ContactService {
     try {
       final data = await _api.getJson('/emergency-contacts/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results; 
       if (data is List) {
         results = data as List<dynamic>;
       } else if (data['results'] is List) {

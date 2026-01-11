@@ -71,8 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: AppSpacing.xl),
-                
-                // Логотип/иконка
                 Container(
                   width: 80,
                   height: 80,
@@ -96,8 +94,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.xxl),
-                
-                // Поле телефона
                 TextFormField(
                   controller: _phoneController,
                   decoration: InputDecoration(
@@ -118,8 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.md),
-                
-                // Поле пароля
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -144,8 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.xxl),
-                
-                // Кнопка входа
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
@@ -164,8 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.md),
-                
-                // Кнопка регистрации
                 Center(
                   child: TextButton(
                     onPressed: auth.isLoading

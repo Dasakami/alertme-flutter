@@ -1,4 +1,4 @@
-// lib/screens/activation_code_screen.dart - ИСПРАВЛЕННАЯ ВЕРСИЯ
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -40,10 +40,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       if (!mounted) return;
 
       if (success) {
-        // ✅ Перезагружаем профиль пользователя (обновляет is_premium)
         await authProvider.loadProfile();
-        
-        // ✅ Тихо обновляем подписку
         await subscriptionProvider.loadCurrentSubscription();
         
         Navigator.pop(context);
@@ -93,8 +90,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.xl),
-              
-              // Иконка
               Container(
                 width: 100,
                 height: 100,
@@ -126,8 +121,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xxl),
-              
-              // Поле для кода
               TextFormField(
                 controller: _codeController,
                 decoration: const InputDecoration(
@@ -153,8 +146,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xxl),
-              
-              // Кнопка активации
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -173,8 +164,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Инструкция
               Container(
                 padding: AppSpacing.paddingLg,
                 decoration: BoxDecoration(
@@ -245,8 +234,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
     );
   }
 }
-
-// Форматтер для автоматического добавления дефисов
 class _CodeInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

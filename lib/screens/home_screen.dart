@@ -1,4 +1,3 @@
-// lib/screens/home_screen.dart - ОБНОВЛЕННАЯ ВЕРСИЯ
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
@@ -10,7 +9,7 @@ import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/contacts_screen.dart';
 import 'package:alertme/screens/safety_timer_screen.dart';
 import 'package:alertme/screens/settings_screen.dart';
-import 'package:alertme/screens/sos_confirmation_screen.dart';  // ЕДИНСТВЕННЫЙ импорт для SOS
+import 'package:alertme/screens/sos_confirmation_screen.dart'; 
 import 'package:alertme/widgets/sos_button.dart';
 import 'package:alertme/widgets/mini_map.dart';
 import 'package:alertme/widgets/quick_action_button.dart';
@@ -35,22 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final contactProvider = context.read<ContactProvider>();
     final subscriptionProvider = context.read<SubscriptionProvider>();
     final sosProvider = context.read<SOSProvider>();
-
-    // ✅ Загружаем профиль (с is_premium)
     await authProvider.loadProfile();
     
     await Future.wait([
       contactProvider.loadContacts(),
-      subscriptionProvider.loadCurrentSubscription(), // Тихо
+      subscriptionProvider.loadCurrentSubscription(), 
       sosProvider.loadAlerts(),
     ]);
   }
 
-  // ИЗМЕНЕНО: Теперь открываем экран подтверждения
   void _triggerSOS() {
     final contactProvider = context.read<ContactProvider>();
-
-    // Проверка контактов
     if (contactProvider.contacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -60,8 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
-
-    // Открываем экран подтверждения БЕЗ const
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const SOSConfirmationScreen(),
@@ -80,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Шапка
             Padding(
               padding: AppSpacing.horizontalLg + AppSpacing.verticalMd,
               child: Row(
@@ -103,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Row(
                     children: [
-                      // Индикатор активного SOS
                       if (sosProvider.hasActiveAlert)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -144,8 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            
-            // Контент
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _loadData,
@@ -155,13 +143,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: AppSpacing.lg),
-                      
-                      // Карта
                       const MiniMap(),
                       
                       const SizedBox(height: AppSpacing.xxl),
-                      
-                      // SOS кнопка
                       SOSButton(onActivate: _triggerSOS),
                       
                       const SizedBox(height: AppSpacing.xxl),
@@ -175,8 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       
                       const SizedBox(height: AppSpacing.xxl),
-                      
-                      // Быстрые действия
                       Row(
                         children: [
                           Expanded(

@@ -24,7 +24,6 @@ class TimerService {
     }
   }
 
-  /// ✅ УЛУЧШЕНО: Поддержка секунд и минут
   Future<SafetyTimer> startTimer(String userId, Duration duration) async {
     try {
       final now = DateTime.now();

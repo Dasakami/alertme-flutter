@@ -3,10 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:alertme/models/emergency_contact.dart';
 
 class NotificationService {
-  /// Отправка SMS
   Future<bool> sendSMS(EmergencyContact contact, String message) async {
     try {
-      // SMS URL схема: sms:номер?body=текст
       final smsUrl = Uri.parse(
         'sms:${contact.phoneNumber}?body=${Uri.encodeComponent(message)}'
       );
@@ -30,11 +28,8 @@ class NotificationService {
       return false;
     }
   }
-
-  /// Совершение звонка
   Future<bool> makeCall(EmergencyContact contact) async {
     try {
-      // Tel URL схема: tel:номер
       final telUrl = Uri.parse('tel:${contact.phoneNumber}');
       
       if (await canLaunchUrl(telUrl)) {
@@ -56,8 +51,6 @@ class NotificationService {
       return false;
     }
   }
-
-  /// Отправка SMS всем контактам
   Future<Map<String, bool>> sendSOSToAll(
     List<EmergencyContact> contacts,
     String message,
@@ -67,14 +60,12 @@ class NotificationService {
     for (final contact in contacts) {
       results[contact.phoneNumber] = await sendSMS(contact, message);
       
-      // Небольшая задержка между отправками
       await Future.delayed(const Duration(milliseconds: 500));
     }
     
     return results;
   }
 
-  /// Позвонить основному контакту
   Future<bool> callPrimaryContact(List<EmergencyContact> contacts) async {
     final primary = contacts.where((c) => c.isPrimary).firstOrNull;
     
@@ -82,17 +73,12 @@ class NotificationService {
       return await makeCall(primary);
     }
     
-    // Если нет основного, звоним первому
     if (contacts.isNotEmpty) {
       return await makeCall(contacts.first);
     }
     
     return false;
   }
-
-  
-
-  /// Генерация SOS сообщения
   String generateSOSMessage({
     required String userName,
     required double? latitude,

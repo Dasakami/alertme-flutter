@@ -13,28 +13,22 @@ class SOSProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// ✅ Загрузка списка SOS алертов
   Future<void> loadAlerts() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Пытаемся загрузить, но не показываем ошибку если не получилось
       await _service.loadAlerts().catchError((e) {
         debugPrint('⚠️ Не удалось загрузить SOS алерты: $e');
-        // Игнорируем ошибку - это не критично для работы приложения
       });
     } catch (e) {
       debugPrint('⚠️ Ошибка загрузки SOS: $e');
-      // Не сохраняем ошибку, чтобы не мешать основному flow
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-
-  /// ✅ Активация SOS с аудио в одном запросе
   Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
@@ -71,7 +65,6 @@ class SOSProvider with ChangeNotifier {
     }
   }
 
-  /// Отмена активного SOS
   Future<void> cancelSOS() async {
     try {
       await _service.cancelSOS();
@@ -81,8 +74,6 @@ class SOSProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
-  /// Завершение SOS
   Future<void> resolveSOS() async {
     try {
       await _service.resolveSOS();
@@ -93,7 +84,6 @@ class SOSProvider with ChangeNotifier {
     }
   }
 
-  /// Отметить как ложную тревогу
   Future<void> markAsFalseAlarm() async {
     try {
       await _service.markAsFalseAlarm();

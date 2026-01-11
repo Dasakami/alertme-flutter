@@ -112,7 +112,6 @@ class StorageService {
   String get safetyTimerKey => _safetyTimerKey;
   String get onboardingKey => _onboardingKey;
 
-  // Token helpers
   Future<void> saveTokens(String access, String refresh) async {
     await saveString(_accessTokenKey, access);
     await saveString(_refreshTokenKey, refresh);

@@ -3,14 +3,14 @@ import 'package:alertme/models/emergency_contact.dart';
 class SharedLocationModel {
   final int id;
   final EmergencyContact? sharedWith;
-  final int? sharedWithId; // write-only in API
+  final int? sharedWithId; 
   final String shareToken;
   final String? shareUrl;
   final int durationMinutes;
   final DateTime? startTime;
   final DateTime? endTime;
-  final String status; // active | expired | revoked
-  final int timeRemaining; // seconds
+  final String status; 
+  final int timeRemaining; 
   final DateTime createdAt;
 
   SharedLocationModel({

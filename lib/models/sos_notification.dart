@@ -1,11 +1,10 @@
 import 'package:alertme/models/emergency_contact.dart';
 
-/// Модель уведомления о SOS сигнале
 class SOSNotificationModel {
   final int id;
   final EmergencyContact? contact;
-  final String notificationType; // sms, call, push
-  final String status; // queued, sent, delivered, read, failed
+  final String notificationType; 
+  final String status; 
   final String? content;
   final DateTime? sentAt;
   final DateTime? deliveredAt;
@@ -24,13 +23,10 @@ class SOSNotificationModel {
     this.errorMessage,
   });
 
-  /// Успешно ли отправлено
   bool get isSent => status == 'sent' || status == 'delivered' || status == 'read';
 
-  /// Доставлено ли
   bool get isDelivered => status == 'delivered' || status == 'read';
 
-  /// Создание из JSON
   factory SOSNotificationModel.fromJson(Map<String, dynamic> json) => 
     SOSNotificationModel(
       id: json['id'] as int,

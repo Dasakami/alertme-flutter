@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:alertme/config/api_config.dart';
 import 'package:alertme/services/storage_service.dart';
-
-/// Исключение API с детальной информацией об ошибке
 class ApiException implements Exception {
   final int? statusCode;
   final String message;
@@ -28,15 +26,11 @@ class ApiException implements Exception {
     return message;
   }
 }
-
-/// HTTP клиент для работы с Django REST API
 class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
   final StorageService _storage = StorageService();
-
-  /// Базовый URL из конфига
   String get _baseUrl {
     if (apiBaseUrl.isEmpty) {
       debugPrint('⚠️ ApiClient: apiBaseUrl пустой. Проверьте lib/config/api_config.dart');
@@ -46,8 +40,6 @@ class ApiClient {
       ? apiBaseUrl.substring(0, apiBaseUrl.length - 1) 
       : apiBaseUrl;
   }
-
-  /// Формирует заголовки для запроса
   Future<Map<String, String>> _headers({bool auth = false}) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -63,22 +55,17 @@ class ApiClient {
     
     return headers;
   }
-
-  /// Формирует полный URI
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     if (_baseUrl.isEmpty) {
       debugPrint('⚠️ Используется относительный URL: $path');
       return Uri.parse(path);
     }
-    
-    // path уже содержит полный путь (/auth/register/, /api/contacts/, etc)
     final fullUrl = '$_baseUrl$path';
     return Uri.parse(fullUrl).replace(
       queryParameters: query?.map((k, v) => MapEntry(k, '$v'))
     );
   }
 
-  /// GET запрос с возвратом JSON
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, dynamic>? query, 
@@ -94,7 +81,6 @@ class ApiClient {
     return _decodeJson(res);
   }
 
-  /// POST запрос с возвратом JSON
   Future<Map<String, dynamic>> postJson(
     String path, {
     Object? body, 
@@ -111,7 +97,6 @@ class ApiClient {
     return _decodeJson(res);
   }
 
-  /// PUT запрос с возвратом JSON
   Future<Map<String, dynamic>> putJson(
     String path, {
     Object? body, 
@@ -127,8 +112,6 @@ class ApiClient {
     );
     return _decodeJson(res);
   }
-
-  /// PATCH запрос с возвратом JSON
   Future<Map<String, dynamic>> patchJson(
     String path, {
     Object? body, 
@@ -144,8 +127,6 @@ class ApiClient {
     );
     return _decodeJson(res);
   }
-
-  /// DELETE запрос
   Future<void> delete(String path, {bool auth = true}) async {
     await _send(
       () async => _client.delete(
@@ -157,29 +138,21 @@ class ApiClient {
   }
 
   bool _isRefreshing = false;
-  
-  /// Отправляет запрос с автоматическим обновлением токена при 401
   Future<http.Response> _send(
     Future<http.Response> Function() request, 
     {required bool auth}
   ) async {
     try {
       http.Response res = await request();
-      
-      // Если 401 и нужна авторизация - пробуем обновить токен
       if (res.statusCode == 401 && auth && !_isRefreshing) {
         final refreshed = await _refreshToken();
         if (refreshed) {
           res = await request();
         }
       }
-
-      // Успешный ответ
       if (res.statusCode >= 200 && res.statusCode < 300) {
         return res;
       }
-
-      // ===== ДЕТАЛЬНАЯ ОБРАБОТКА ОШИБОК =====
       String message = 'HTTP ${res.statusCode}';
       Map<String, dynamic>? errors;
       
@@ -187,13 +160,11 @@ class ApiClient {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         
         if (data is Map<String, dynamic>) {
-          // Django REST Framework возвращает детали ошибки
           if (data['detail'] != null) {
             message = data['detail'].toString();
           } else if (data['error'] != null) {
             message = data['error'].toString();
           } else {
-            // Ошибки валидации полей
             errors = data.cast<String, dynamic>();
             final errorList = <String>[];
             
@@ -213,8 +184,6 @@ class ApiClient {
       } catch (e) {
         debugPrint('⚠️ Ошибка парсинга ответа: $e');
       }
-      
-      // Логирование для отладки
       debugPrint('❌ API Error ${res.statusCode}: $message');
       debugPrint('URL: ${res.request?.url}');
       debugPrint('Response: ${res.body}');
@@ -231,8 +200,6 @@ class ApiClient {
       throw ApiException('Ошибка сети: $e');
     }
   }
-
-  /// Декодирует JSON из ответа
   Map<String, dynamic> _decodeJson(http.Response res) {
     try {
       final decoded = jsonDecode(utf8.decode(res.bodyBytes));
@@ -240,8 +207,6 @@ class ApiClient {
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
-      
-      // Если API вернул массив, оборачиваем в объект
       return {'data': decoded};
     } catch (e) {
       debugPrint('❌ Ошибка декодирования JSON: $e');
@@ -252,11 +217,8 @@ class ApiClient {
       );
     }
   }
-
-  /// Обновляет access токен используя refresh токен
   Future<bool> _refreshToken() async {
     if (_isRefreshing) {
-      // Ждем пока другой запрос обновит токен
       for (int i = 0; i < 10; i++) {
         await Future.delayed(const Duration(milliseconds: 100));
         final token = await _storage.getAccessToken();

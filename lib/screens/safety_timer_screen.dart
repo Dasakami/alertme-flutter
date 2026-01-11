@@ -102,7 +102,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
 
       if (alert != null && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => SOSActiveScreen()), // БЕЗ const
+          MaterialPageRoute(builder: (_) => SOSActiveScreen()),
         );
       }
     } catch (e) {

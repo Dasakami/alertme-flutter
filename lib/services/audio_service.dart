@@ -13,8 +13,6 @@ class AudioService {
 
   bool get isRecording => _isRecording;
   String? get recordingPath => _recordingPath;
-
-  /// Инициализация рекордера
   Future<void> init() async {
     if (_isInitialized) return;
     
@@ -27,8 +25,6 @@ class AudioService {
       debugPrint('❌ Ошибка инициализации recorder: $e');
     }
   }
-
-  /// Запросить разрешение на запись
   Future<bool> requestPermission() async {
     try {
       final status = await Permission.microphone.request();
@@ -51,25 +47,17 @@ class AudioService {
       return false;
     }
   }
-
-  /// Начать запись аудио
   Future<bool> startRecording() async {
     try {
       if (!_isInitialized) {
         await init();
       }
-
-      // Проверяем разрешение
       if (!await requestPermission()) {
         return false;
       }
-
-      // Создаем путь для файла
       final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       _recordingPath = '${dir.path}/sos_audio_$timestamp.aac';
-
-      // Начинаем запись
       await _recorder!.startRecorder(
         toFile: _recordingPath,
         codec: Codec.aacADTS,
@@ -83,8 +71,6 @@ class AudioService {
       return false;
     }
   }
-
-  /// Остановить запись
   Future<String?> stopRecording() async {
     try {
       if (!_isRecording || _recorder == null) {
@@ -98,8 +84,6 @@ class AudioService {
       if (path != null) {
         debugPrint('✅ Запись остановлена: $path');
         _recordingPath = path;
-        
-        // Проверяем размер файла
         final file = File(path);
         if (await file.exists()) {
           final size = await file.length();
@@ -116,16 +100,12 @@ class AudioService {
       return null;
     }
   }
-
-  /// Отменить запись
   Future<void> cancelRecording() async {
     try {
       if (_isRecording && _recorder != null) {
         await _recorder!.stopRecorder();
         _isRecording = false;
       }
-      
-      // Удаляем файл если был создан
       if (_recordingPath != null) {
         final file = File(_recordingPath!);
         if (await file.exists()) {
@@ -139,8 +119,6 @@ class AudioService {
       debugPrint('❌ Ошибка отмены записи: $e');
     }
   }
-
-  /// Отправить аудио в Telegram через chat_id
   Future<bool> sendAudioToTelegram({
     required String botToken,
     required String chatId,
@@ -154,25 +132,17 @@ class AudioService {
         debugPrint('❌ Файл не найден: $audioPath');
         return false;
       }
-
-      // Получаем размер файла
       final fileSize = await file.length();
       debugPrint('📁 Размер файла для отправки: ${fileSize / 1024} KB');
-
-      // Telegram Bot API endpoint
       final url = Uri.parse(
         'https://api.telegram.org/bot$botToken/sendAudio'
       );
-
-      // Создаем multipart request
       final request = http.MultipartRequest('POST', url);
       
       request.fields['chat_id'] = chatId;
       if (caption != null) {
         request.fields['caption'] = caption;
       }
-
-      // Добавляем аудио файл
       request.files.add(
         await http.MultipartFile.fromPath(
           'audio',
@@ -180,8 +150,6 @@ class AudioService {
           filename: 'sos_audio.aac',
         ),
       );
-
-      // Отправляем
       debugPrint('📤 Отправка аудио в Telegram (chat_id: $chatId)...');
       final response = await request.send();
       
@@ -199,16 +167,12 @@ class AudioService {
       return false;
     }
   }
-
-  /// Очистить старые записи
   Future<void> cleanupOldRecordings() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final files = dir.listSync()
           .where((e) => e.path.contains('sos_audio_'))
           .toList();
-
-      // Удаляем файлы старше 24 часов
       final now = DateTime.now();
       int deleted = 0;
       
@@ -229,8 +193,6 @@ class AudioService {
       debugPrint('❌ Ошибка очистки: $e');
     }
   }
-
-  /// Освободить ресурсы
   Future<void> dispose() async {
     try {
       if (_recorder != null) {

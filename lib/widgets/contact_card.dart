@@ -21,7 +21,6 @@ class ContactCard extends StatelessWidget {
         padding: AppSpacing.paddingMd,
         child: Row(
           children: [
-            // Аватар
             Container(
               width: 48,
               height: 48,
@@ -38,8 +37,6 @@ class ContactCard extends StatelessWidget {
             ),
             
             const SizedBox(width: AppSpacing.md),
-            
-            // Информация
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +84,6 @@ class ContactCard extends StatelessWidget {
                       style: context.textStyles.bodySmall,
                     ),
                   ],
-                  // В методе build ContactCard после relation:
 if (contact.telegramUsername != null) ...[
   const SizedBox(height: AppSpacing.xs),
   Row(
@@ -104,8 +100,6 @@ if (contact.telegramUsername != null) ...[
                 ],
               ),
             ),
-            
-            // Меню действий
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'primary' && onSetPrimary != null) {

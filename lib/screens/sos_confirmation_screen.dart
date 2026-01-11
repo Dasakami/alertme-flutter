@@ -126,8 +126,8 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
       }
 
       if (context.mounted) {
-        Navigator.pop(context); // Закрываем загрузку
-        Navigator.pop(context); // Закрываем экран подтверждения
+        Navigator.pop(context);
+        Navigator.pop(context); 
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SOSActiveScreen()),

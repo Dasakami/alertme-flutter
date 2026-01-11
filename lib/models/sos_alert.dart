@@ -1,9 +1,8 @@
 import 'package:alertme/models/sos_notification.dart';
 
-/// Модель SOS сигнала
 class SOSAlertModel {
   final int id;
-  final String status; // active, responding, resolved, cancelled, false_alarm
+  final String status;
   final double? latitude;
   final double? longitude;
   final double? locationAccuracy;
@@ -11,7 +10,7 @@ class SOSAlertModel {
   final String? mapLink;
   final String? audioFile;
   final String? videoFile;
-  final String? activationMethod; // button, volume_keys, shake, timer
+  final String? activationMethod; 
   final String? notes;
   final List<SOSNotificationModel> notifications;
   final DateTime createdAt;
@@ -36,20 +35,15 @@ class SOSAlertModel {
     this.resolvedAt,
   });
 
-  /// Активен ли сигнал
   bool get isActive => status == 'active';
 
-  /// Ссылка на 2GIS карту
   String get mapUrl {
     if (latitude != null && longitude != null) {
       return 'https://go.2gis.com/show_point?lat=$latitude&lon=$longitude';
     }
     return mapLink ?? '';
   }
-
-  /// ✅ ИСПРАВЛЕН: Безопасный парсинг координат
   factory SOSAlertModel.fromJson(Map<String, dynamic> json) {
-    // Безопасное преобразование координат
     double? parseCoordinate(dynamic value) {
       if (value == null) return null;
       if (value is num) return value.toDouble();
@@ -83,7 +77,6 @@ class SOSAlertModel {
     );
   }
 
-  /// Конвертация в JSON
   Map<String, dynamic> toJson() => {
     'latitude': latitude,
     'longitude': longitude,

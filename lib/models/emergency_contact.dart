@@ -1,11 +1,10 @@
-/// Модель экстренного контакта
 class EmergencyContact {
   final int id;
   final String name;
   final String phoneNumber;
   final String? email;
   final String? relation;
-  final String? telegramUsername; // НОВОЕ ПОЛЕ
+  final String? telegramUsername; 
   final bool isPrimary;
   final bool isActive;
   final Map<String, dynamic> notificationPreferences;
@@ -18,7 +17,7 @@ class EmergencyContact {
     required this.phoneNumber,
     this.email,
     this.relation,
-    this.telegramUsername, // НОВОЕ
+    this.telegramUsername,
     this.isPrimary = false,
     this.isActive = true,
     this.notificationPreferences = const {},
@@ -26,7 +25,6 @@ class EmergencyContact {
     required this.updatedAt,
   });
 
-  /// Создание из JSON (от сервера)
   factory EmergencyContact.fromJson(Map<String, dynamic> json) => 
     EmergencyContact(
       id: json['id'] as int,
@@ -34,7 +32,7 @@ class EmergencyContact {
       phoneNumber: json['phone_number'] as String,
       email: json['email'] as String?,
       relation: json['relation'] as String?,
-      telegramUsername: json['telegram_username'] as String?, // НОВОЕ
+      telegramUsername: json['telegram_username'] as String?, 
       isPrimary: json['is_primary'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
       notificationPreferences: (json['notification_preferences'] as Map<String, dynamic>?) ?? {},
@@ -42,25 +40,23 @@ class EmergencyContact {
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
 
-  /// Конвертация в JSON (для отправки на сервер)
   Map<String, dynamic> toJson() => {
     'name': name,
     'phone_number': phoneNumber,
     'email': email,
     'relation': relation,
-    'telegram_username': telegramUsername, // НОВОЕ
+    'telegram_username': telegramUsername,
     'is_primary': isPrimary,
     'notification_preferences': notificationPreferences,
   };
 
-  /// Создание копии с измененными полями
   EmergencyContact copyWith({
     int? id,
     String? name,
     String? phoneNumber,
     String? email,
     String? relation,
-    String? telegramUsername, // НОВОЕ
+    String? telegramUsername, 
     bool? isPrimary,
     bool? isActive,
     Map<String, dynamic>? notificationPreferences,
@@ -72,7 +68,7 @@ class EmergencyContact {
     phoneNumber: phoneNumber ?? this.phoneNumber,
     email: email ?? this.email,
     relation: relation ?? this.relation,
-    telegramUsername: telegramUsername ?? this.telegramUsername, // НОВОЕ
+    telegramUsername: telegramUsername ?? this.telegramUsername,
     isPrimary: isPrimary ?? this.isPrimary,
     isActive: isActive ?? this.isActive,
     notificationPreferences: notificationPreferences ?? this.notificationPreferences,
