@@ -29,7 +29,6 @@ class SubscriptionProvider with ChangeNotifier {
     }
   }
 
-  /// ИСПРАВЛЕНО: Принудительное обновление подписки
   Future<void> loadCurrentSubscription() async {
     try {
       await _service.loadCurrentSubscription();
@@ -42,7 +41,6 @@ class SubscriptionProvider with ChangeNotifier {
     }
   }
 
-  /// ИСПРАВЛЕНО: Активация кода с обновлением
   Future<bool> activateCode(String code) async {
     _isLoading = true;
     _error = null;
@@ -52,7 +50,6 @@ class SubscriptionProvider with ChangeNotifier {
       final success = await _service.activateCode(code);
       
       if (success) {
-        // ✅ ОБНОВЛЯЕМ ПОДПИСКУ ПОСЛЕ АКТИВАЦИИ
         await loadCurrentSubscription();
         debugPrint('✅ Код активирован, подписка обновлена');
       }
@@ -84,7 +81,6 @@ class SubscriptionProvider with ChangeNotifier {
         paymentMethod: paymentMethod,
       );
       
-      // Обновляем подписку после оформления
       await loadCurrentSubscription();
       
       _isLoading = false;
@@ -102,7 +98,6 @@ class SubscriptionProvider with ChangeNotifier {
     try {
       await _service.cancelSubscription();
       
-      // Обновляем подписку после отмены
       await loadCurrentSubscription();
       
       notifyListeners();

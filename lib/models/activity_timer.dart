@@ -3,9 +3,9 @@ class ActivityTimerModel {
   final int durationMinutes;
   final DateTime? startTime;
   final DateTime? endTime;
-  final String status; // active | paused | completed | canceled
+  final String status; 
   final String? checkInMessage;
-  final int timeRemaining; // seconds
+  final int timeRemaining; 
   final DateTime createdAt;
 
   ActivityTimerModel({

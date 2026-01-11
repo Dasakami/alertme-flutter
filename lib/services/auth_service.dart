@@ -16,8 +16,6 @@ class AuthService {
   Future<void> init() async {
     await loadCurrentUser();
   }
-
-  /// ✅ Загрузка пользователя из кэша
   Future<void> loadCurrentUser() async {
     try {
       final json = await _storage.getJson(_storage.userKey);
@@ -25,8 +23,6 @@ class AuthService {
       if (json != null) {
         _currentUser = UserModel.fromJson(json);
         debugPrint('✅ Пользователь загружен из кэша: ${_currentUser?.phoneNumber}');
-        
-        // Проверяем токен и подгружаем актуальные данные
         final token = await _storage.getAccessToken();
         if (token != null && token.isNotEmpty) {
           await loadUserProfile();
@@ -37,7 +33,6 @@ class AuthService {
     }
   }
 
-  /// ✅ НОВОЕ: Загрузка профиля с сервера (с is_premium)
   Future<void> loadUserProfile() async {
     try {
       final data = await _api.getJson('/users/me/', auth: true);
@@ -137,8 +132,6 @@ class AuthService {
       return false;
     }
   }
-
-  /// ✅ Авторизация по телефону и паролю
   Future<bool> login({
     required String phoneNumber, 
     required String password
@@ -160,20 +153,14 @@ class AuthService {
       if (access == null || refresh == null) {
         throw ApiException('Неверный ответ сервера');
       }
-      
-      // Сохраняем токены
       await _storage.saveTokens(access, refresh);
       debugPrint('✅ Токены сохранены');
-      
-      // Сохраняем пользователя
       if (data['user'] != null) {
         final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
         await _storage.saveJson(_storage.userKey, user.toJson());
         _currentUser = user;
         debugPrint('✅ Пользователь сохранен, is_premium=${user.isPremium}');
       }
-      
-      // Загружаем актуальный профиль
       await loadUserProfile();
       
       debugPrint('✅ Вход выполнен: $phoneNumber');
@@ -183,8 +170,6 @@ class AuthService {
       return false;
     }
   }
-
-  /// ✅ ИСПРАВЛЕННОЕ обновление профиля
   Future<void> updateProfile({
     String? email,
     String? firstName,
@@ -201,8 +186,6 @@ class AuthService {
       if (language != null) body['language'] = language;
 
       debugPrint('📤 Отправка обновления профиля: $body');
-
-      // ИСПРАВЛЕН URL
       final data = await _api.patchJson(
         '/users/update-profile/', 
         body: body, 
@@ -210,8 +193,6 @@ class AuthService {
       );
 
       debugPrint('✅ Ответ сервера получен');
-
-      // Проверяем структуру ответа
       Map<String, dynamic> userData;
       if (data['user'] != null) {
         userData = data['user'] as Map<String, dynamic>;
@@ -224,8 +205,6 @@ class AuthService {
       _currentUser = user;
 
       debugPrint('✅ Профиль обновлен локально');
-      
-      // Перезагружаем профиль с сервера для синхронизации
       await loadUserProfile();
       
       debugPrint('✅ Профиль синхронизирован с сервером');

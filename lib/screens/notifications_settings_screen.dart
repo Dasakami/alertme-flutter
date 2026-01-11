@@ -48,7 +48,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
       body: ListView(
         padding: AppSpacing.paddingLg,
         children: [
-          // SOS уведомления
           Card(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: SwitchListTile(
@@ -69,8 +68,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
               activeColor: AppColors.deepBlue,
             ),
           ),
-          
-          // Звук
           Card(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: SwitchListTile(
@@ -91,8 +88,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
               activeColor: AppColors.deepBlue,
             ),
           ),
-          
-          // Вибрация
           Card(
             margin: const EdgeInsets.only(bottom: AppSpacing.md),
             child: SwitchListTile(
@@ -115,8 +110,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
           ),
           
           const SizedBox(height: AppSpacing.md),
-          
-          // Информация
           Container(
             padding: AppSpacing.paddingMd,
             decoration: BoxDecoration(
@@ -139,8 +132,6 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
           ),
           
           const SizedBox(height: AppSpacing.lg),
-          
-          // Кнопка теста
           SizedBox(
             width: double.infinity,
             height: 48,

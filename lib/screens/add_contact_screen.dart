@@ -121,7 +121,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Имя
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -138,8 +137,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Телефон
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -181,8 +178,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Telegram Username
               TextFormField(
                 controller: _telegramController,
                 decoration: InputDecoration(
@@ -208,8 +203,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Email
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -221,8 +214,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Отношение
               TextFormField(
                 controller: _relationController,
                 decoration: InputDecoration(
@@ -233,8 +224,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
-              
-              // Основной контакт
               CheckboxListTile(
                 value: _isPrimary,
                 onChanged: (value) => setState(() => _isPrimary = value ?? false),
@@ -244,8 +233,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.md),
-              
-              // Информация о Telegram
               Container(
                 padding: AppSpacing.paddingMd,
                 decoration: BoxDecoration(
@@ -268,8 +255,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xl),
-              
-              // Кнопка сохранения
               SizedBox(
                 height: 56,
                 child: ElevatedButton(

@@ -81,8 +81,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           ),
         );
         _startResendTimer();
-        
-        // Очищаем поля
         for (var controller in _controllers) {
           controller.clear();
         }
@@ -116,7 +114,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Если есть пароль - делаем автоматический вход
       if (widget.postVerifyPassword != null) {
         final ok = await authProvider.login(
           phoneNumber: widget.phoneNumber,
@@ -139,7 +136,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         (route) => false,
       );
     } else {
-      // Очищаем поля при ошибке
       for (var controller in _controllers) {
         controller.clear();
       }
@@ -171,8 +167,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.xl),
-              
-              // Иконка
               Container(
                 width: 100,
                 height: 100,
@@ -204,16 +198,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xxl),
-              
-              // Поля для кода
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) => _buildOTPField(index)),
               ),
               
               const SizedBox(height: AppSpacing.xl),
-              
-              // Таймер повторной отправки
               if (!_canResend)
                 Center(
                   child: Text(
@@ -230,8 +220,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 ),
               
               const SizedBox(height: AppSpacing.xxl),
-              
-              // Кнопка подтверждения
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -250,8 +238,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               ),
               
               const SizedBox(height: AppSpacing.md),
-              
-              // Подсказка для теста
               if (authProvider.error?.contains('Тестовый код') ?? false)
                 Container(
                   padding: AppSpacing.paddingMd,

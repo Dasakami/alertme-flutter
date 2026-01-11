@@ -42,8 +42,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         : _emailController.text.trim();
     final pass = _passwordController.text;
     final pass2 = _password2Controller.text;
-
-    // Регистрация
     final ok = await auth.register(
       phoneNumber: phone,
       password: pass,
@@ -63,8 +61,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-
-    // Отправка SMS
     final sent = await auth.sendOTP(phone);
     if (!mounted) return;
 
@@ -77,8 +73,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-
-    // Переход на экран подтверждения
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => OTPVerificationScreen(
@@ -112,8 +106,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.xxl),
-                
-                // Телефон
                 TextFormField(
                   controller: _phoneController,
                   decoration: InputDecoration(
@@ -134,8 +126,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.md),
-                
-                // Email (опционально)
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -147,8 +137,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.md),
-                
-                // Пароль
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -173,8 +161,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.md),
-                
-                // Подтверждение пароля
                 TextFormField(
                   controller: _password2Controller,
                   decoration: InputDecoration(
@@ -199,8 +185,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 
                 const SizedBox(height: AppSpacing.xxl),
-                
-                // Кнопка регистрации
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(

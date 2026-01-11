@@ -1,7 +1,7 @@
 class SubscriptionPlan {
   final int id;
   final String name;
-  final String planType; // free, premium, etc
+  final String planType; 
   final String? description;
   final double priceMonthly;
   final double priceYearly;
@@ -23,12 +23,9 @@ class SubscriptionPlan {
     this.locationHistoryEnabled = false,
   });
 
-  /// Бесплатный ли план
   bool get isFree => planType == 'free' || priceMonthly == 0;
 
-  /// ✅ ИСПРАВЛЕННЫЙ парсинг - обработка String и num
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
-    // Безопасное преобразование цен
     double parsePrice(dynamic value) {
       if (value == null) return 0;
       if (value is num) return value.toDouble();
@@ -39,14 +36,12 @@ class SubscriptionPlan {
       return 0;
     }
 
-    // Безопасное преобразование features
     List<String> parseFeatures(dynamic value) {
       if (value == null) return [];
       if (value is List) {
         return value.map((e) => e.toString()).toList();
       }
       if (value is Map) {
-        // Если features это Map (JSON object), возвращаем ключи
         return value.keys.map((e) => e.toString()).toList();
       }
       return [];
@@ -70,12 +65,11 @@ class SubscriptionPlan {
   String toString() => 'SubscriptionPlan(id: $id, name: $name, type: $planType)';
 }
 
-/// Модель подписки пользователя
 class UserSubscription {
   final int id;
   final SubscriptionPlan plan;
-  final String status; // active, inactive, canceled, expired
-  final String paymentPeriod; // monthly, yearly
+  final String status;
+  final String paymentPeriod; 
   final DateTime startDate;
   final DateTime endDate;
   final bool autoRenew;
@@ -98,10 +92,8 @@ class UserSubscription {
     required this.updatedAt,
   });
 
-  /// Истекла ли подписка
   bool get isExpired => DateTime.now().isAfter(endDate);
 
-  /// Создание из JSON
   factory UserSubscription.fromJson(Map<String, dynamic> json) => 
     UserSubscription(
       id: json['id'] as int,
@@ -121,14 +113,14 @@ class UserSubscription {
   String toString() => 'UserSubscription(plan: ${plan.name}, status: $status)';
 }
 
-/// Модель платежа
+
 class PaymentTransaction {
   final int id;
   final double amount;
   final String currency;
   final String paymentMethod;
   final String transactionId;
-  final String status; // pending, completed, failed
+  final String status; 
   final DateTime createdAt;
   final DateTime? completedAt;
 
@@ -144,7 +136,6 @@ class PaymentTransaction {
   });
 
   factory PaymentTransaction.fromJson(Map<String, dynamic> json) {
-    // Безопасное преобразование amount
     double parseAmount(dynamic value) {
       if (value == null) return 0;
       if (value is num) return value.toDouble();

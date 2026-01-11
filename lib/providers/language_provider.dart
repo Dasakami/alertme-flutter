@@ -21,7 +21,6 @@ class LanguageProvider with ChangeNotifier {
   }
 
   static const Map<String, Map<String, String>> _translations = {
-    // Основные
     'app_name': {'ru': 'alertme', 'kg': 'alertme'},
     'welcome': {'ru': 'Добро пожаловать', 'kg': 'Кош келиңиз'},
     'yes': {'ru': 'Да', 'kg': 'Ооба'},
@@ -31,7 +30,6 @@ class LanguageProvider with ChangeNotifier {
     'success': {'ru': 'Успешно', 'kg': 'Ийгиликтүү'},
     'loading': {'ru': 'Загрузка...', 'kg': 'Жүктөлүүдө...'},
     
-    // Онбординг
     'onboarding_title_1': {'ru': 'Ваша безопасность', 'kg': 'Сиздин коопсуздугуңуз'},
     'onboarding_desc_1': {'ru': 'Один жест - и помощь уже в пути', 'kg': 'Бир жест менен жардам жолдо'},
     'onboarding_title_2': {'ru': 'Доверенные контакты', 'kg': 'Ишенимдүү байланыштар'},
@@ -40,7 +38,6 @@ class LanguageProvider with ChangeNotifier {
     'onboarding_desc_3': {'ru': 'Быстрое реагирование в любой ситуации', 'kg': 'Каалаган учурда тез жооп'},
     'get_started': {'ru': 'Начать', 'kg': 'Баштоо'},
     
-    // Авторизация
     'phone_number': {'ru': 'Номер телефона', 'kg': 'Телефон номери'},
     'enter_phone': {'ru': 'Введите номер телефона', 'kg': 'Телефон номерин киргизиңиз'},
     'send_code': {'ru': 'Отправить код', 'kg': 'Код жөнөтүү'},
@@ -54,7 +51,6 @@ class LanguageProvider with ChangeNotifier {
     'confirm_password': {'ru': 'Подтвердите пароль', 'kg': 'Сырсөздү тастыктаңыз'},
     'continue': {'ru': 'Продолжить', 'kg': 'Улантуу'},
     
-    // SOS
     'sos': {'ru': 'SOS', 'kg': 'SOS'},
     'hold_for_sos': {'ru': 'Удерживайте для SOS', 'kg': 'SOS үчүн кармап туруңуз'},
     'sos_activated': {'ru': 'SOS активирован', 'kg': 'SOS иштетилди'},
@@ -71,7 +67,6 @@ class LanguageProvider with ChangeNotifier {
     'location_sent': {'ru': 'Местоположение отправлено', 'kg': 'Жайгашкан жер жөнөтүлдү'},
     'contacts_notified': {'ru': 'Уведомлено контактов:', 'kg': 'Билдирилген байланыштар:'},
     
-    // Контакты
     'contacts': {'ru': 'Контакты', 'kg': 'Байланыштар'},
     'add_contact': {'ru': 'Добавить контакт', 'kg': 'Байланыш кошуу'},
     'emergency_contacts': {'ru': 'Экстренные контакты', 'kg': 'Өзгөчө учурдагы байланыштар'},
@@ -107,7 +102,6 @@ class LanguageProvider with ChangeNotifier {
     'limit': {'ru': 'Лимит:', 'kg': 'Лимит:'},
     'primary_contact_info': {'ru': 'Основной контакт будет получать уведомления первым.', 'kg': 'Негизги байланыш билдирмелерди биринчи алат.'},
     
-    // Таймер
     'safety_timer': {'ru': 'Таймер безопасности', 'kg': 'Коопсуздук таймери'},
     'set_timer': {'ru': 'Установить таймер', 'kg': 'Таймерди коюу'},
     'timer_active': {'ru': 'Таймер активен', 'kg': 'Таймер иштеп жатат'},
@@ -163,7 +157,6 @@ class LanguageProvider with ChangeNotifier {
     'telegram_sos': {'ru': 'SOS в Telegram', 'kg': 'Telegram\'дагы SOS'},
     'telegram_sos_desc': {'ru': 'Мгновенные уведомления в мессенджер', 'kg': 'Мессенджерге тез билдирмелер'},
     
-    // Активация кода
     'activation': {'ru': 'Активация кода', 'kg': 'Коддун иштетүү'},
     'premium_activation': {'ru': 'Активация Premium', 'kg': 'Premium иштетүү'},
     'enter_code_from_bot': {'ru': 'Введите код из Telegram бота', 'kg': 'Telegram боттон коддун киргизиңиз'},
@@ -179,7 +172,6 @@ class LanguageProvider with ChangeNotifier {
     'enter_code': {'ru': 'Введите код', 'kg': 'Коду киргизиңиз'},
     'invalid_code_format': {'ru': 'Неверный формат кода', 'kg': 'Туура эмес код форматы'},
     
-    // Уведомления
     'notification_types': {'ru': 'Типы уведомлений', 'kg': 'Билдирмелердин түрлөрү'},
     'sos_alerts': {'ru': 'SOS сигналы', 'kg': 'SOS сигналдары'},
     'sos_alerts_desc': {'ru': 'Уведомления об экстренных ситуациях', 'kg': 'Өзгөчө кырдаалдар жөнүндө билдирмелер'},
@@ -201,7 +193,6 @@ class LanguageProvider with ChangeNotifier {
     'send_test_notification': {'ru': 'Отправить тестовое уведомление', 'kg': 'Тест билдирме жөнөтүү'},
     'test_notification_sent': {'ru': 'Тестовое уведомление отправлено', 'kg': 'Тест билдирме жөнөтүлдү'},
     
-    // Разрешения
     'permissions': {'ru': 'Разрешения', 'kg': 'Уруксаттар'},
     'permissions_required': {'ru': 'Для работы приложения необходимы следующие разрешения:', 'kg': 'Тиркеменин иштеши үчүн төмөнкү уруксаттар керек:'},
     'location': {'ru': 'Местоположение', 'kg': 'Жайгашкан жер'},
@@ -219,10 +210,8 @@ class LanguageProvider with ChangeNotifier {
     'permissions_info': {'ru': 'Для работы приложения необходимы разрешения на:\n\n• Местоположение - для отправки SOS\n• Микрофон - для записи аудио\n\nБез этих разрешений приложение не сможет работать корректно.', 'kg': 'Тиркеменин иштеши үчүн уруксаттар керек:\n\n• Жайгашкан жер - SOS жөнөтүү үчүн\n• Микрофон - аудио жаздыруу үчүн\n\nБул уруксаттарсыз тиркеме туура иштебейт.'},
     'open_settings': {'ru': 'Открыть настройки', 'kg': 'Жөндөөлөрдү ачуу'},
     
-    // Главная
     'home': {'ru': 'Главная', 'kg': 'Башкы'},
     
-    // Telegram
     'telegram_how_it_works': {'ru': 'Как это работает:', 'kg': 'Бул кантип иштейт:'},
     'telegram_step_1': {'ru': 'Найдите бот @AlertMePremiumBot в Telegram', 'kg': 'Telegram\'дан @AlertMePremiumBot ботун табыңыз'},
     'telegram_step_2': {'ru': 'Нажмите /start', 'kg': '/start басыңыз'},

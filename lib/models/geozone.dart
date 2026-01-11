@@ -68,7 +68,6 @@ class Geozone {
     );
   }
 
-  /// Конвертация в JSON
   Map<String, dynamic> toJson() => {
     'name': name,
     'description': description,
@@ -87,12 +86,11 @@ class Geozone {
   String toString() => 'Geozone(id: $id, name: $name, type: $zoneType)';
 }
 
-/// Модель события геозоны
 class GeozoneEvent {
   final int id;
   final int geozoneId;
   final String? geozoneName;
-  final String eventType; // enter, exit
+  final String eventType; 
   final double latitude;
   final double longitude;
   final bool notificationSent;

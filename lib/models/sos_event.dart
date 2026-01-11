@@ -87,7 +87,6 @@ class LocationData {
     'address': address,
   };
 
-  // ИЗМЕНЕНО: Используем Google Maps вместо 2GIS
   String get mapUrl => 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
 }
 enum SOSStatus { active, cancelled, completed }

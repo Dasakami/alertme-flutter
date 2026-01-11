@@ -1,4 +1,4 @@
-/// Модель пользователя приложения
+
 class UserModel {
   final int id;
   final String phoneNumber;
@@ -9,7 +9,7 @@ class UserModel {
   final String? avatar;
   final String language;
   final bool isPhoneVerified;
-  final bool isPremium; // ✅ ДОБАВЛЕНО
+  final bool isPremium;
   final DateTime createdAt;
 
   UserModel({
@@ -22,11 +22,10 @@ class UserModel {
     this.avatar,
     this.language = 'ru',
     this.isPhoneVerified = false,
-    this.isPremium = false, // ✅ ДОБАВЛЕНО
+    this.isPremium = false, 
     required this.createdAt,
   });
 
-  /// Полное имя пользователя
   String get name {
     if (firstName != null && lastName != null) {
       return '$firstName $lastName';
@@ -37,7 +36,6 @@ class UserModel {
     return phoneNumber;
   }
 
-  /// Создание из JSON (от сервера)
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
     id: json['id'] as int,
     phoneNumber: json['phone_number'] as String,
@@ -48,11 +46,10 @@ class UserModel {
     avatar: json['avatar'] as String?,
     language: json['language'] as String? ?? 'ru',
     isPhoneVerified: json['is_phone_verified'] as bool? ?? false,
-    isPremium: json['is_premium'] as bool? ?? false, // ✅ ДОБАВЛЕНО
+    isPremium: json['is_premium'] as bool? ?? false, 
     createdAt: DateTime.parse(json['created_at'] as String),
   );
 
-  /// Конвертация в JSON (для отправки на сервер)
   Map<String, dynamic> toJson() => {
     'id': id,
     'phone_number': phoneNumber,
@@ -63,11 +60,10 @@ class UserModel {
     'avatar': avatar,
     'language': language,
     'is_phone_verified': isPhoneVerified,
-    'is_premium': isPremium, // ✅ ДОБАВЛЕНО
+    'is_premium': isPremium, 
     'created_at': createdAt.toIso8601String(),
   };
 
-  /// Создание копии с измененными полями
   UserModel copyWith({
     int? id,
     String? phoneNumber,
@@ -78,7 +74,7 @@ class UserModel {
     String? avatar,
     String? language,
     bool? isPhoneVerified,
-    bool? isPremium, // ✅ ДОБАВЛЕНО
+    bool? isPremium,
     DateTime? createdAt,
   }) => UserModel(
     id: id ?? this.id,
@@ -90,7 +86,7 @@ class UserModel {
     avatar: avatar ?? this.avatar,
     language: language ?? this.language,
     isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
-    isPremium: isPremium ?? this.isPremium, // ✅ ДОБАВЛЕНО
+    isPremium: isPremium ?? this.isPremium, 
     createdAt: createdAt ?? this.createdAt,
   );
 

@@ -37,7 +37,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
   }
 
   Future<void> _requestAllPermissions() async {
-    // Запрашиваем все разрешения
     final statuses = await [
       Permission.location,
       Permission.microphone,
@@ -46,8 +45,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
     ].request();
 
     await _checkPermissions();
-
-    // Если все критичные разрешения выданы - переходим дальше
     if (_locationGranted && _microphoneGranted) {
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -105,7 +102,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Иконка
                   Container(
                     width: isMobileSize ? 80 : 100,
                     height: isMobileSize ? 80 : 100,
@@ -139,8 +135,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
                   ),
 
                   SizedBox(height: isMobileSize ? AppSpacing.lg : AppSpacing.xxl),
-
-                  // Список разрешений
                   _buildPermissionItem(
                     icon: Icons.location_on,
                     title: 'Местоположение',
@@ -174,8 +168,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
                   ),
 
                   SizedBox(height: isMobileSize ? AppSpacing.lg : AppSpacing.xxl),
-
-                  // Кнопка
                   SizedBox(
                     width: double.infinity,
                     height: 56,

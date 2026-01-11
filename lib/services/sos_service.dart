@@ -16,7 +16,6 @@ class SOSService {
   SOSAlertModel? get activeAlert => _activeAlert;
   bool get hasActiveAlert => _activeAlert != null;
 
-  /// ✅ Загрузка списка SOS алертов
   Future<void> loadAlerts() async {
     try {
       final token = await _storage.getAccessToken();
@@ -53,11 +52,8 @@ class SOSService {
       }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки SOS: $e');
-      // Не пробрасываем ошибку - это не критично
     }
   }
-
-  /// ✅ Создание SOS с аудио в одном запросе (multipart)
   Future<SOSAlertModel?> triggerSOS({
     required double latitude,
     required double longitude,
@@ -68,21 +64,16 @@ class SOSService {
     String? audioPath,
   }) async {
     try {
-      // Получаем токен
       final token = await _storage.getAccessToken();
       if (token == null) {
         debugPrint('❌ Токен отсутствует');
         throw Exception('Требуется авторизация');
       }
-
-      // Создаем multipart request
       final uri = Uri.parse('$apiBaseUrl/sos-alerts/');
       final request = http.MultipartRequest('POST', uri);
       
-      // Добавляем заголовки
       request.headers['Authorization'] = 'Bearer $token';
       
-      // ✅ Добавляем данные SOS
       request.fields['latitude'] = latitude.toString();
       request.fields['longitude'] = longitude.toString();
       
@@ -100,7 +91,6 @@ class SOSService {
         request.fields['notes'] = notes;
       }
 
-      // ✅ Добавляем аудио файл если есть
       if (audioPath != null) {
         final audioFile = File(audioPath);
         
@@ -109,7 +99,7 @@ class SOSService {
           
           request.files.add(
             await http.MultipartFile.fromPath(
-              'audio_file',  // ← Название поля в Django
+              'audio_file', 
               audioPath,
               filename: 'sos_audio.aac',
             ),
@@ -125,15 +115,12 @@ class SOSService {
       debugPrint('📤 Отправка SOS на сервер...');
       debugPrint('📍 Координаты: $latitude, $longitude');
       debugPrint('🎤 Аудио: ${audioPath != null ? "Да" : "Нет"}');
-      
-      // Отправляем запрос
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
       
       debugPrint('📥 Ответ сервера: ${response.statusCode}');
       
       if (response.statusCode == 201 || response.statusCode == 200) {
-        // Парсим ответ
         final data = jsonDecode(responseBody) as Map<String, dynamic>;
         
         final alert = SOSAlertModel.fromJson(data);
@@ -156,7 +143,6 @@ class SOSService {
     }
   }
 
-  /// Отмена SOS
   Future<void> cancelSOS() async {
     if (_activeAlert != null) {
       try {
@@ -182,8 +168,6 @@ class SOSService {
       }
     }
   }
-
-  /// Завершение SOS
   Future<void> resolveSOS() async {
     if (_activeAlert != null) {
       try {
@@ -210,7 +194,6 @@ class SOSService {
     }
   }
 
-  /// Отметить как ложную тревогу
   Future<void> markAsFalseAlarm() async {
     if (_activeAlert != null) {
       try {

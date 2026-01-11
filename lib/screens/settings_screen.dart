@@ -78,8 +78,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             _buildProfileCard(context, lang, user),
             const SizedBox(height: AppSpacing.lg),
-            
-            // Язык
             _buildSettingsTile(
               context,
               lang,
@@ -88,11 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: lang.isRussian ? 'Русский' : 'Кыргызча',
               onTap: () => _showLanguageDialog(context, lang),
             ),
-            
-            // Подписка
             _buildSubscriptionTile(context, lang, user),
-            
-            // Уведомления
             _buildSettingsTile(
               context,
               lang,
@@ -110,8 +104,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             
             const SizedBox(height: AppSpacing.lg),
-            
-            // Выход
             _buildSettingsTile(
               context,
               lang,

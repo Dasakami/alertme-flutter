@@ -35,24 +35,16 @@ class _MiniMapState extends State<MiniMap> {
 
   Future<void> _openInGoogleMaps() async {
     if (_lat != null && _lon != null) {
-      // Google Maps URL схема
-      // Android/iOS: geo:latitude,longitude?q=latitude,longitude
-      // Web/Универсальная: https://www.google.com/maps/search/?api=1&query=lat,lon
-      
       final Uri url;
       
       try {
-        // Пробуем открыть через приложение Google Maps
         url = Uri.parse('geo:$_lat,$_lon?q=$_lat,$_lon');
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
           return;
         }
       } catch (e) {
-        // Если не получилось, используем веб-версию
       }
-      
-      // Fallback на веб-версию Google Maps
       final webUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$_lat,$_lon'
       );

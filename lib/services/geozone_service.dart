@@ -12,7 +12,7 @@ class GeozoneService {
     try {
       final data = await _api.getJson('/geozones/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results; 
       if (data is List) {
         results = data as List<dynamic>;
       } else if (data['results'] is List) {
@@ -106,7 +106,7 @@ class GeozoneService {
     try {
       final data = await _api.getJson('/geozones/$geozoneId/events/', auth: true);
       
-      List<dynamic> results; // ИСПРАВЛЕНО
+      List<dynamic> results; 
       if (data is List) {
         results = data as List<dynamic>;
       } else if (data['results'] is List) {

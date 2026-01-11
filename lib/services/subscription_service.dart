@@ -45,8 +45,6 @@ class SubscriptionService {
       rethrow;
     }
   }
-
-  /// ✅ УПРОЩЕННАЯ ЗАГРУЗКА: просто получаем данные, НЕ обновляем is_premium
   Future<void> loadCurrentSubscription() async {
     try {
       debugPrint('📡 Загрузка подписки...');
@@ -84,7 +82,6 @@ class SubscriptionService {
     }
   }
 
-  /// ✅ АКТИВАЦИЯ КОДА
   Future<bool> activateCode(String code) async {
     try {
       debugPrint('🔑 Активация кода: $code');
@@ -98,7 +95,6 @@ class SubscriptionService {
       debugPrint('📦 Ответ сервера: $data');
       
       if (data['success'] == true) {
-        // Обновляем подписку из ответа
         if (data['subscription'] != null) {
           final subData = data['subscription'] as Map<String, dynamic>;
           

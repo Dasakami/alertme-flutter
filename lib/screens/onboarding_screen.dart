@@ -91,7 +91,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_currentPage == pages.length - 1) {
-                          // Переход на экран разрешений
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute(builder: (_) => const PermissionsRequestScreen()),
                           );

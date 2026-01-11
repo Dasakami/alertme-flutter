@@ -22,12 +22,10 @@ class AlertMeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Auth Provider должен быть первым
         ChangeNotifierProvider(
           create: (_) => AuthProvider()..init(),
         ),
         
-        // Остальные провайдеры
         ChangeNotifierProvider(create: (_) => ContactProvider()),
         ChangeNotifierProvider(create: (_) => SOSProvider()),
         ChangeNotifierProvider(create: (_) => GeozoneProvider()),
@@ -36,7 +34,6 @@ class AlertMeApp extends StatelessWidget {
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
-          // Загружаем планы подписок если пользователь авторизован
           if (authProvider.isAuthenticated) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               context.read<SubscriptionProvider>().loadPlans();
