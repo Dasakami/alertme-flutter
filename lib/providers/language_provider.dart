@@ -124,8 +124,6 @@ class LanguageProvider with ChangeNotifier {
     'hours': {'ru': 'ч', 'kg': 'с'},
     'time_remaining': {'ru': 'Таймер истечёт через', 'kg': 'Таймер бүтөт'},
     'time_warning': {'ru': '⚠️ Осталось мало времени!', 'kg': '⚠️ Аз убакыт калды!'},
-    
-    // Настройки
     'settings': {'ru': 'Настройки', 'kg': 'Жөндөөлөр'},
     'profile': {'ru': 'Профиль', 'kg': 'Профиль'},
     'language': {'ru': 'Язык', 'kg': 'Тил'},
@@ -142,8 +140,6 @@ class LanguageProvider with ChangeNotifier {
     'refresh': {'ru': 'Обновить', 'kg': 'Жаңыртуу'},
     'data_updated': {'ru': '✅ Данные обновлены', 'kg': '✅ Маалыматтар жаңыртылды'},
     'notifications_settings': {'ru': 'Настройка уведомлений', 'kg': 'Билдирмелерди жөндөө'},
-    
-    // Подписка
     'free': {'ru': 'Бесплатно', 'kg': 'Акысыз'},
     'premium': {'ru': 'Premium', 'kg': 'Premium'},
     'upgrade_to_premium': {'ru': 'Обновить до Premium', 'kg': 'Premium чейин жаңыртуу'},

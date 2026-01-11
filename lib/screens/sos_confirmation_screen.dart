@@ -1,4 +1,3 @@
-// sos_confirmation_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:alertme/theme.dart';
@@ -127,8 +126,8 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
       }
 
       if (context.mounted) {
-        Navigator.pop(context);
-        Navigator.pop(context);
+        Navigator.pop(context); // Закрываем загрузку
+        Navigator.pop(context); // Закрываем экран подтверждения
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
@@ -226,23 +225,19 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
                     _buildActionItem(
                       Icons.sms,
                       '${lang.translate('sms_to_contacts')} (${contactProvider.contacts.length})',
-                      lang,
                     ),
                     _buildActionItem(
                       Icons.email,
                       lang.translate('email_with_media'),
-                      lang,
                     ),
                     _buildActionItem(
                       Icons.location_on,
                       lang.translate('your_location'),
-                      lang,
                     ),
                     if (_isRecording || _audioService.recordingPath != null)
                       _buildActionItem(
                         Icons.mic,
                         '${lang.translate('audio_recording')} (${_recordingSeconds}${lang.translate('seconds')})',
-                        lang,
                       ),
                   ],
                 ),
@@ -292,7 +287,7 @@ class _SOSConfirmationScreenState extends State<SOSConfirmationScreen> {
     );
   }
 
-  Widget _buildActionItem(IconData icon, String text, LanguageProvider lang) {
+  Widget _buildActionItem(IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
