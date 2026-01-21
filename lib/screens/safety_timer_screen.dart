@@ -8,6 +8,7 @@ import 'package:alertme/providers/sos_provider.dart';
 import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/services/timer_service.dart';
 import 'package:alertme/services/location_service.dart';
+import 'package:alertme/services/audio_service.dart';
 import 'package:alertme/screens/sos_active_screen.dart';
 
 class SafetyTimerScreen extends StatefulWidget {
@@ -20,18 +21,27 @@ class SafetyTimerScreen extends StatefulWidget {
 class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   final TimerService _timerService = TimerService();
   final LocationService _locationService = LocationService();
+  final AudioService _audioService = AudioService();
+  
   int _selectedMinutes = 30;
+  int _selectedSeconds = 0; // Для коротких тестов
   Timer? _countdownTimer;
+  bool _isRecording = false;
+  int _recordingSeconds = 0;
+  Timer? _recordingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadTimer();
+    _audioService.init();
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _recordingTimer?.cancel();
+    _audioService.dispose();
     super.dispose();
   }
 
@@ -41,6 +51,8 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       await _timerService.loadTimer(authProvider.currentUser!.id.toString());
       if (_timerService.hasActiveTimer) {
         _startCountdown();
+        // Если таймер активен, начинаем запись
+        _startRecording();
       }
       setState(() {});
     }
@@ -59,20 +71,56 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     });
   }
 
+  // 🎤 НОВАЯ ЛОГИКА: Запись аудио во время таймера
+  Future<void> _startRecording() async {
+    final success = await _audioService.startRecording();
+    
+    if (success) {
+      setState(() => _isRecording = true);
+      
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() => _recordingSeconds++);
+        }
+      });
+      
+      debugPrint('🎤 Запись аудио начата для таймера');
+    }
+  }
+
+  Future<String?> _stopRecording() async {
+    _recordingTimer?.cancel();
+    setState(() => _isRecording = false);
+    
+    final audioPath = await _audioService.stopRecording();
+    debugPrint('🎤 Запись остановлена: $audioPath');
+    
+    return audioPath;
+  }
+
   Future<void> _onTimerExpired() async {
     final contactProvider = context.read<ContactProvider>();
     final sosProvider = context.read<SOSProvider>();
+    final lang = context.read<LanguageProvider>();
 
     if (contactProvider.contacts.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Нет контактов для отправки SOS'),
+          SnackBar(
+            content: Text(lang.isRussian 
+              ? 'Нет контактов для отправки SOS'
+              : 'SOS жөнөтүү үчүн байланыштар жок'),
             backgroundColor: AppColors.sosRed,
           ),
         );
       }
       return;
+    }
+
+    // Останавливаем запись и получаем аудио
+    String? audioPath;
+    if (_isRecording) {
+      audioPath = await _stopRecording();
     }
 
     await _timerService.completeTimer();
@@ -83,8 +131,10 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       if (location == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Не удалось определить местоположение'),
+            SnackBar(
+              content: Text(lang.isRussian 
+                ? 'Не удалось определить местоположение'
+                : 'Жайгашкан жерди аныктоо мүмкүн болгон жок'),
               backgroundColor: AppColors.sosRed,
             ),
           );
@@ -92,17 +142,21 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         return;
       }
 
+      // Отправляем SOS С АУДИО
       final alert = await sosProvider.triggerSOS(
         latitude: location.latitude,
         longitude: location.longitude,
         address: location.address,
         activationMethod: 'timer',
-        notes: 'Таймер безопасности истек',
+        notes: lang.isRussian 
+          ? 'Таймер безопасности истек. Аудио: ${_recordingSeconds}с'
+          : 'Коопсуздук таймери бүттү. Аудио: ${_recordingSeconds}с',
+        audioPath: audioPath, // АУДИО ПРИКРЕПЛЕНО
       );
 
       if (alert != null && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => SOSActiveScreen()),
+          MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
         );
       }
     } catch (e) {
@@ -110,7 +164,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка активации SOS: $e'),
+            content: Text('${lang.translate('error')}: $e'),
             backgroundColor: AppColors.sosRed,
           ),
         );
@@ -118,23 +172,64 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     }
   }
 
-  void _startTimer() async {
+  Future<void> _startTimer() async {
     final authProvider = context.read<AuthProvider>();
+    final lang = context.read<LanguageProvider>();
+    
     if (authProvider.currentUser == null) return;
+
+    // Определяем длительность (может быть в секундах для тестов)
+    Duration duration;
+    if (_selectedMinutes == 0) {
+      // Это секунды (например, 30 секунд)
+      duration = Duration(seconds: _selectedSeconds);
+    } else {
+      duration = Duration(minutes: _selectedMinutes);
+    }
 
     await _timerService.startTimer(
       authProvider.currentUser!.id.toString(),
-      Duration(minutes: _selectedMinutes),
+      duration,
     );
     
     _startCountdown();
+    await _startRecording(); // Начинаем запись сразу
+    
     setState(() {});
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(lang.isRussian 
+          ? '🎤 Таймер запущен. Идет запись аудио...'
+          : '🎤 Таймер башталды. Аудио жазылууда...'),
+        backgroundColor: AppColors.deepBlue,
+      ),
+    );
   }
 
-  void _cancelTimer() async {
+  Future<void> _cancelTimer() async {
+    final lang = context.read<LanguageProvider>();
+    
+    if (_isRecording) {
+      await _audioService.cancelRecording();
+      _recordingTimer?.cancel();
+      setState(() {
+        _isRecording = false;
+        _recordingSeconds = 0;
+      });
+    }
+    
     await _timerService.cancelTimer();
     _countdownTimer?.cancel();
     setState(() {});
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(lang.isRussian 
+          ? 'Таймер отменен. Запись удалена.'
+          : 'Таймер жокко чыгарылды. Жазуу өчүрүлдү.'),
+      ),
+    );
   }
 
   @override
@@ -172,33 +267,81 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
-            lang.translate('timer_description'),
+            lang.isRussian
+              ? 'Таймер начнет запись аудио. Если время истечет - SOS с аудио будет отправлен автоматически'
+              : 'Таймер аудио жазууну баштайт. Эгер убакыт бүтсө - SOS аудио менен автоматтык түрдө жөнөтүлөт',
             style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         
-        _buildTimerCategory(lang.translate('quick_tests'), [
-          _TimerOption(label: '3 ${lang.translate('seconds')}', seconds: 3),
-          _TimerOption(label: '5 ${lang.translate('minutes')}', minutes: 5),
-        ]),
+        // ДЛЯ ТЕСТИРОВАНИЯ: Короткие таймеры
+        _buildTimerCategory(
+          lang.isRussian ? 'Тесты' : 'Тесттер',
+          [
+            _TimerOption(label: '30 ${lang.translate('seconds')}', seconds: 30),
+            _TimerOption(label: '1 ${lang.translate('minutes')}', minutes: 1),
+            _TimerOption(label: '2 ${lang.translate('minutes')}', minutes: 2),
+          ]
+        ),
         
         const SizedBox(height: AppSpacing.sm),
         
-        _buildTimerCategory(lang.translate('standard'), [
-          _TimerOption(label: '15 ${lang.translate('minutes')}', minutes: 15),
-          _TimerOption(label: '30 ${lang.translate('minutes')}', minutes: 30),
-          _TimerOption(label: '45 ${lang.translate('minutes')}', minutes: 45),
-          _TimerOption(label: '1 ${lang.translate('hour')}', minutes: 60),
-        ]),
+        _buildTimerCategory(
+          lang.isRussian ? 'Быстрые' : 'Тез',
+          [
+            _TimerOption(label: '5 ${lang.translate('minutes')}', minutes: 5),
+            _TimerOption(label: '10 ${lang.translate('minutes')}', minutes: 10),
+          ]
+        ),
         
         const SizedBox(height: AppSpacing.sm),
         
-        _buildTimerCategory(lang.translate('long_timers'), [
-          _TimerOption(label: '1.5 ${lang.translate('hours')}', minutes: 90),
-          _TimerOption(label: '2 ${lang.translate('hours')}', minutes: 120),
-        ]),
+        _buildTimerCategory(
+          lang.isRussian ? 'Стандартные' : 'Стандарттык',
+          [
+            _TimerOption(label: '15 ${lang.translate('minutes')}', minutes: 15),
+            _TimerOption(label: '30 ${lang.translate('minutes')}', minutes: 30),
+            _TimerOption(label: '45 ${lang.translate('minutes')}', minutes: 45),
+            _TimerOption(label: '1 ${lang.translate('hour')}', minutes: 60),
+          ]
+        ),
+        
+        const SizedBox(height: AppSpacing.sm),
+        
+        _buildTimerCategory(
+          lang.isRussian ? 'Длительные' : 'Узак',
+          [
+            _TimerOption(label: '1.5 ${lang.translate('hours')}', minutes: 90),
+            _TimerOption(label: '2 ${lang.translate('hours')}', minutes: 120),
+          ]
+        ),
+        
+        const SizedBox(height: AppSpacing.lg),
+        
+        Container(
+          padding: AppSpacing.paddingMd,
+          decoration: BoxDecoration(
+            color: AppColors.softCyan.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.softCyan),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.mic, color: AppColors.deepBlue, size: 24),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  lang.isRussian 
+                    ? 'Аудио запись начнется сразу после запуска таймера'
+                    : 'Аудио жазуу таймер башталгандан кийин дароо башталат',
+                  style: context.textStyles.bodySmall?.semiBold.withColor(AppColors.deepBlue),
+                ),
+              ),
+            ],
+          ),
+        ),
         
         const SizedBox(height: AppSpacing.lg),
         SizedBox(
@@ -206,7 +349,9 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
           height: 50,
           child: ElevatedButton(
             onPressed: _startTimer,
-            child: Text(lang.translate('start_timer')),
+            child: Text(lang.isRussian 
+              ? 'Запустить таймер с записью'
+              : 'Жазуу менен таймерди баштоо'),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -231,14 +376,22 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
           runSpacing: 8,
           alignment: WrapAlignment.start,
           children: options.map((option) {
-            final totalMinutes = option.getTotalMinutes();
-            final isSelected = _selectedMinutes == totalMinutes;
+            final isSelected = (option.minutes > 0 && _selectedMinutes == option.minutes && _selectedSeconds == 0) ||
+                               (option.seconds > 0 && _selectedSeconds == option.seconds && _selectedMinutes == 0);
             
             return ChoiceChip(
               label: Text(option.label),
               selected: isSelected,
               onSelected: (selected) {
-                setState(() => _selectedMinutes = totalMinutes);
+                setState(() {
+                  if (option.seconds > 0) {
+                    _selectedSeconds = option.seconds;
+                    _selectedMinutes = 0;
+                  } else {
+                    _selectedMinutes = option.minutes;
+                    _selectedSeconds = 0;
+                  }
+                });
               },
               selectedColor: AppColors.deepBlue,
               backgroundColor: Colors.white,
@@ -276,7 +429,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
             ),
           ),
           child: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
@@ -304,6 +457,37 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         
         const SizedBox(height: AppSpacing.xl),
         
+        // Показываем статус записи
+        if (_isRecording)
+          Container(
+            padding: AppSpacing.paddingMd,
+            decoration: BoxDecoration(
+              color: AppColors.sosRed.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.sosRed),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  '${lang.isRussian ? 'Запись' : 'Жазылууда'}: ${_recordingSeconds}${lang.translate('seconds')}',
+                  style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.sosRed),
+                ),
+              ],
+            ),
+          ),
+        
+        const SizedBox(height: AppSpacing.lg),
+        
         if (isShortTimer)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -321,22 +505,14 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
                   const SizedBox(width: AppSpacing.sm),
                   Flexible(
                     child: Text(
-                      lang.translate('time_warning'),
+                      lang.isRussian 
+                        ? 'SOS с аудио будет отправлен через $seconds секунд!'
+                        : 'Аудио менен SOS $seconds секундадан кийин жөнөтүлөт!',
                       style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.sosRed),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-        
-        if (!isShortTimer)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Text(
-              '${lang.translate('time_remaining')} ${minutes}${lang.translate('minutes')} ${seconds}${lang.translate('seconds')}',
-              style: context.textStyles.bodyMedium,
-              textAlign: TextAlign.center,
             ),
           ),
         

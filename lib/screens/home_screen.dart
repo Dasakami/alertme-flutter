@@ -9,10 +9,11 @@ import 'package:alertme/providers/language_provider.dart';
 import 'package:alertme/screens/contacts_screen.dart';
 import 'package:alertme/screens/safety_timer_screen.dart';
 import 'package:alertme/screens/settings_screen.dart';
-import 'package:alertme/screens/sos_confirmation_screen.dart'; 
+import 'package:alertme/screens/sos_active_screen.dart';
 import 'package:alertme/widgets/sos_button.dart';
 import 'package:alertme/widgets/mini_map.dart';
 import 'package:alertme/widgets/quick_action_button.dart';
+import 'package:alertme/services/location_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,23 +44,93 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
   }
 
-  void _triggerSOS() {
+  // 🚨 НОВАЯ ЛОГИКА: Быстрая активация SOS без аудио
+  Future<void> _triggerQuickSOS() async {
     final contactProvider = context.read<ContactProvider>();
+    final sosProvider = context.read<SOSProvider>();
+    final locationService = LocationService();
+    final lang = context.read<LanguageProvider>();
+
     if (contactProvider.contacts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Добавьте хотя бы один экстренный контакт'),
+        SnackBar(
+          content: Text(lang.translate('add_contact_first')),
           backgroundColor: AppColors.sosRed,
         ),
       );
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const SOSConfirmationScreen(),
-        fullscreenDialog: true,
+
+    // Показываем индикатор загрузки
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
       ),
     );
+
+    try {
+      // Получаем местоположение
+      final location = await locationService.getCurrentLocation();
+      
+      if (location == null) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(lang.isRussian 
+                ? 'Не удалось определить местоположение'
+                : 'Жайгашкан жерди аныктоо мүмкүн болгон жок'),
+              backgroundColor: AppColors.sosRed,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Мгновенная отправка SOS БЕЗ аудио
+      final alert = await sosProvider.triggerSOS(
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.address,
+        activationMethod: 'button',
+        notes: lang.isRussian ? 'Быстрая активация SOS' : 'Тез SOS активациялоо',
+        audioPath: null, // НЕТ АУДИО
+      );
+
+      if (alert == null) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(sosProvider.error ?? lang.translate('activation_error')),
+              backgroundColor: AppColors.sosRed,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Закрываем индикатор
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${lang.translate('error')}: $e'),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -146,12 +217,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       const MiniMap(),
                       
                       const SizedBox(height: AppSpacing.xxl),
-                      SOSButton(onActivate: _triggerSOS),
+                      // ИЗМЕНЕНО: Одно нажатие вместо зажимания
+                      SOSButton(onActivate: _triggerQuickSOS),
                       
                       const SizedBox(height: AppSpacing.xxl),
                       
                       Text(
-                        lang.translate('hold_for_sos'),
+                        lang.isRussian 
+                          ? 'Нажмите для мгновенной отправки SOS'
+                          : 'SOS дароо жөнөтүү үчүн басыңыз',
                         style: context.textStyles.bodyMedium?.withColor(
                           AppColors.textSecondary,
                         ),
