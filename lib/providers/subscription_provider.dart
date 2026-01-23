@@ -21,8 +21,10 @@ class SubscriptionProvider with ChangeNotifier {
 
     try {
       await _service.loadPlans();
+      _error = null;
     } catch (e) {
       _error = e.toString();
+      debugPrint('❌ Ошибка загрузки планов: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -32,6 +34,7 @@ class SubscriptionProvider with ChangeNotifier {
   Future<void> loadCurrentSubscription() async {
     try {
       await _service.loadCurrentSubscription();
+      _error = null;
       debugPrint('✅ Подписка обновлена: isPremium = $isPremium');
       notifyListeners();
     } catch (e) {
@@ -50,18 +53,24 @@ class SubscriptionProvider with ChangeNotifier {
       final success = await _service.activateCode(code);
       
       if (success) {
+        // Обновляем текущую подписку после успешной активации
         await loadCurrentSubscription();
         debugPrint('✅ Код активирован, подписка обновлена');
       }
       
       _isLoading = false;
+      _error = null;
       notifyListeners();
       return success;
+      
     } catch (e) {
+      // Сохраняем ошибку для отображения
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      
+      // Пробрасываем ошибку выше для обработки в UI
+      rethrow;
     }
   }
 
@@ -84,28 +93,35 @@ class SubscriptionProvider with ChangeNotifier {
       await loadCurrentSubscription();
       
       _isLoading = false;
+      _error = null;
       notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      rethrow;
     }
   }
 
   Future<bool> cancelSubscription() async {
     try {
       await _service.cancelSubscription();
-      
       await loadCurrentSubscription();
       
+      _error = null;
       notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
       notifyListeners();
-      return false;
+      rethrow;
     }
+  }
+
+  // Метод для очистки ошибок
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 }

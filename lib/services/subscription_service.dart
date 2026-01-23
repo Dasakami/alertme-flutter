@@ -45,6 +45,7 @@ class SubscriptionService {
       rethrow;
     }
   }
+
   Future<void> loadCurrentSubscription() async {
     try {
       debugPrint('📡 Загрузка подписки...');
@@ -94,41 +95,48 @@ class SubscriptionService {
       
       debugPrint('📦 Ответ сервера: $data');
       
-      if (data['success'] == true) {
-        if (data['subscription'] != null) {
-          final subData = data['subscription'] as Map<String, dynamic>;
-          
-          _currentSubscription = UserSubscription(
-            id: subData['id'] as int,
-            plan: SubscriptionPlan(
-              id: 2,
-              name: subData['plan'] as String? ?? 'Premium',
-              planType: 'personal_premium',
-              priceMonthly: 100,
-              maxContacts: 999,
-              geozonesEnabled: true,
-              locationHistoryEnabled: true,
-            ),
-            status: subData['status'] as String,
-            paymentPeriod: 'monthly',
-            startDate: DateTime.now(),
-            endDate: DateTime.parse(subData['end_date'] as String),
-            autoRenew: false,
-            daysRemaining: subData['days_remaining'] as int? ?? 0,
-            isActive: subData['is_premium'] as bool? ?? true,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-        }
-        
-        debugPrint('✅ Код активирован успешно');
-        return true;
+      // ИСПРАВЛЕНИЕ: Проверяем поле success
+      final success = data['success'] as bool? ?? false;
+      
+      if (!success) {
+        // Возвращаем конкретную ошибку от сервера
+        final errorMessage = data['error'] as String? ?? 'Неизвестная ошибка';
+        throw Exception(errorMessage);
       }
       
-      return false;
+      // Код активирован успешно
+      if (data['subscription'] != null) {
+        final subData = data['subscription'] as Map<String, dynamic>;
+        
+        _currentSubscription = UserSubscription(
+          id: subData['id'] as int,
+          plan: SubscriptionPlan(
+            id: 2,
+            name: subData['plan'] as String? ?? 'Premium',
+            planType: 'personal_premium',
+            priceMonthly: 100,
+            maxContacts: 999,
+            geozonesEnabled: true,
+            locationHistoryEnabled: true,
+          ),
+          status: subData['status'] as String,
+          paymentPeriod: 'monthly',
+          startDate: DateTime.now(),
+          endDate: DateTime.parse(subData['end_date'] as String),
+          autoRenew: false,
+          daysRemaining: subData['days_remaining'] as int? ?? 0,
+          isActive: subData['is_premium'] as bool? ?? true,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+      
+      debugPrint('✅ Код активирован успешно');
+      return true;
+      
     } catch (e) {
       debugPrint('❌ Ошибка активации кода: $e');
-      rethrow;
+      rethrow; // Пробрасываем ошибку дальше для отображения пользователю
     }
   }
 

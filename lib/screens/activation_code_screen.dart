@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -35,36 +34,69 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
     final code = _codeController.text.trim().toUpperCase();
 
     try {
+      // Пытаемся активировать код
       final success = await subscriptionProvider.activateCode(code);
 
       if (!mounted) return;
 
       if (success) {
+        // Обновляем профиль пользователя и подписку
         await authProvider.loadProfile();
         await subscriptionProvider.loadCurrentSubscription();
         
+        // Закрываем экран и показываем успех
         Navigator.pop(context);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Premium подписка активирована!'),
-            backgroundColor: AppColors.softCyan,
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '✅ Premium подписка активирована!',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color(0xFF4CAF50),
             duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(subscriptionProvider.error ?? 'Ошибка активации'),
-            backgroundColor: AppColors.sosRed,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
+      
     } catch (e) {
+      // Обрабатываем ошибку
       if (mounted) {
+        // Извлекаем человекочитаемое сообщение об ошибке
+        String errorMessage = e.toString();
+        
+        // Убираем "Exception: " из начала
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        
+        // Показываем конкретную ошибку
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка: $e'),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    errorMessage,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: AppColors.sosRed,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -74,6 +106,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageProvider>();
@@ -90,6 +123,8 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.xl),
+              
+              // Иконка
               Container(
                 width: 100,
                 height: 100,
@@ -121,6 +156,8 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xxl),
+              
+              // Поле ввода кода
               TextFormField(
                 controller: _codeController,
                 decoration: const InputDecoration(
@@ -146,6 +183,8 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.xxl),
+              
+              // Кнопка активации
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -164,6 +203,8 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               ),
               
               const SizedBox(height: AppSpacing.lg),
+              
+              // Инструкция
               Container(
                 padding: AppSpacing.paddingLg,
                 decoration: BoxDecoration(
@@ -210,7 +251,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
           Container(
             width: 24,
             height: 24,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.deepBlue,
               shape: BoxShape.circle,
             ),
@@ -234,6 +275,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
     );
   }
 }
+
 class _CodeInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
