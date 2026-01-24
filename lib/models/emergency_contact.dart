@@ -4,7 +4,6 @@ class EmergencyContact {
   final String phoneNumber;
   final String? email;
   final String? relation;
-  final String? telegramUsername; 
   final bool isPrimary;
   final bool isActive;
   final Map<String, dynamic> notificationPreferences;
@@ -17,7 +16,6 @@ class EmergencyContact {
     required this.phoneNumber,
     this.email,
     this.relation,
-    this.telegramUsername,
     this.isPrimary = false,
     this.isActive = true,
     this.notificationPreferences = const {},
@@ -32,7 +30,6 @@ class EmergencyContact {
       phoneNumber: json['phone_number'] as String,
       email: json['email'] as String?,
       relation: json['relation'] as String?,
-      telegramUsername: json['telegram_username'] as String?, 
       isPrimary: json['is_primary'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
       notificationPreferences: (json['notification_preferences'] as Map<String, dynamic>?) ?? {},
@@ -45,7 +42,6 @@ class EmergencyContact {
     'phone_number': phoneNumber,
     'email': email,
     'relation': relation,
-    'telegram_username': telegramUsername,
     'is_primary': isPrimary,
     'notification_preferences': notificationPreferences,
   };
@@ -56,7 +52,6 @@ class EmergencyContact {
     String? phoneNumber,
     String? email,
     String? relation,
-    String? telegramUsername, 
     bool? isPrimary,
     bool? isActive,
     Map<String, dynamic>? notificationPreferences,
@@ -68,7 +63,6 @@ class EmergencyContact {
     phoneNumber: phoneNumber ?? this.phoneNumber,
     email: email ?? this.email,
     relation: relation ?? this.relation,
-    telegramUsername: telegramUsername ?? this.telegramUsername,
     isPrimary: isPrimary ?? this.isPrimary,
     isActive: isActive ?? this.isActive,
     notificationPreferences: notificationPreferences ?? this.notificationPreferences,

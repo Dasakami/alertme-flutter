@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:alertme/theme.dart';
 import 'package:alertme/providers/auth_provider.dart';
 import 'package:alertme/providers/subscription_provider.dart';
@@ -101,6 +102,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 );
               },
+            ),
+            _buildSettingsTile(
+              context,
+              lang,
+              icon: Icons.support_agent,
+              title: 'Тех поддержка',
+              subtitle: 'Связаться с поддержкой',
+              onTap: () => _launchWhatsApp(),
+            ),
+            _buildSettingsTile(
+              context,
+              lang,
+              icon: Icons.video_library,
+              title: 'Инструкция',
+              subtitle: 'Посмотреть видео инструкцию',
+              onTap: () => _launchYouTube(),
             ),
             
             const SizedBox(height: AppSpacing.lg),
@@ -327,5 +344,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _launchWhatsApp() async {
+    const url = 'https://wa.me/996123456789'; // Замените на реальный номер
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      // Обработка ошибки
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось открыть WhatsApp')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchYouTube() async {
+    const url = 'https://www.youtube.com/@AlertMe'; // Замените на реальный канал
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось открыть YouTube')),
+        );
+      }
+    }
   }
 }

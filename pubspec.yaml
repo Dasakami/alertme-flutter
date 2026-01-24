@@ -54,5 +54,5 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/icons/alertme_icon.png
+  image_path: assets/icons/saktan_icon.jpeg
   remove_alpha_ios: true

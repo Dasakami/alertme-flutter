@@ -42,45 +42,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
         : _emailController.text.trim();
     final pass = _passwordController.text;
     final pass2 = _password2Controller.text;
-    final ok = await auth.register(
-      phoneNumber: phone,
-      password: pass,
-      passwordConfirm: pass2,
-      email: email,
-      language: lang.currentLanguage,
-    );
 
-    if (!mounted) return;
+    try {
+      final ok = await auth.register(
+        phoneNumber: phone,
+        password: pass,
+        passwordConfirm: pass2,
+        email: email,
+        language: lang.currentLanguage,
+      );
 
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error ?? 'Ошибка регистрации'),
-          backgroundColor: AppColors.sosRed,
+      if (!mounted) return;
+
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.error ?? lang.translate('registration_error')),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+        return;
+      }
+
+      final sent = await auth.sendOTP(phone);
+      if (!mounted) return;
+
+      if (!sent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.error ?? lang.translate('sms_error')),
+            backgroundColor: AppColors.sosRed,
+          ),
+        );
+        return;
+      }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => OTPVerificationScreen(
+            phoneNumber: phone,
+            postVerifyPassword: pass,
+          ),
         ),
       );
-      return;
-    }
-    final sent = await auth.sendOTP(phone);
-    if (!mounted) return;
-
-    if (!sent) {
+    } catch (e) {
+      if (!mounted) return;
+      
+      String errorMessage = lang.translate('unknown_error');
+      
+      if (e.toString().contains('phone') || e.toString().contains('номер')) {
+        errorMessage = lang.translate('invalid_phone');
+      } else if (e.toString().contains('password') || e.toString().contains('пароль')) {
+        errorMessage = lang.translate('password_error');
+      } else if (e.toString().contains('email') || e.toString().contains('почта')) {
+        errorMessage = lang.translate('invalid_email');
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = lang.translate('network_error');
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.error ?? 'Не удалось отправить SMS'),
+          content: Text('❌ $errorMessage'),
           backgroundColor: AppColors.sosRed,
+          duration: const Duration(seconds: 4),
         ),
       );
-      return;
     }
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => OTPVerificationScreen(
-          phoneNumber: phone,
-          postVerifyPassword: pass,
-        ),
-      ),
-    );
   }
 
   @override

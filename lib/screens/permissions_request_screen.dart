@@ -13,8 +13,6 @@ class PermissionsRequestScreen extends StatefulWidget {
 class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
   bool _locationGranted = false;
   bool _microphoneGranted = false;
-  bool _phoneGranted = false;
-  bool _smsGranted = false;
 
   @override
   void initState() {
@@ -25,14 +23,10 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
   Future<void> _checkPermissions() async {
     final location = await Permission.location.status;
     final microphone = await Permission.microphone.status;
-    final phone = await Permission.phone.status;
-    final sms = await Permission.sms.status;
 
     setState(() {
       _locationGranted = location.isGranted;
       _microphoneGranted = microphone.isGranted;
-      _phoneGranted = phone.isGranted;
-      _smsGranted = sms.isGranted;
     });
   }
 
@@ -40,11 +34,10 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
     final statuses = await [
       Permission.location,
       Permission.microphone,
-      Permission.phone,
-      Permission.sms,
     ].request();
 
     await _checkPermissions();
+    
     if (_locationGranted && _microphoneGranted) {
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -86,108 +79,90 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobileSize = MediaQuery.of(context).size.width < 600;
-    
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: AppSpacing.paddingXl,
+        child: Center(
+          child: SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 
-                    MediaQuery.of(context).padding.top -
-                    MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: isMobileSize ? 80 : 100,
-                    height: isMobileSize ? 80 : 100,
-                    decoration: BoxDecoration(
-                      color: AppColors.deepBlue.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Padding(
+                padding: AppSpacing.paddingXl,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.deepBlue.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.security,
+                        size: 40,
+                        color: AppColors.deepBlue,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.security,
-                      size: isMobileSize ? 40 : 48,
-                      color: AppColors.deepBlue,
+
+                    const SizedBox(height: AppSpacing.xxl),
+
+                    Text(
+                      'Разрешения',
+                      style: context.textStyles.displaySmall?.semiBold,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
 
-                  SizedBox(height: isMobileSize ? AppSpacing.lg : AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.md),
 
-                  Text(
-                    'Разрешения',
-                    style: context.textStyles.displaySmall?.semiBold,
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  Text(
-                    'Для работы приложения необходимы следующие разрешения:',
-                    style: context.textStyles.bodyMedium?.withColor(
-                      AppColors.textSecondary,
+                    Text(
+                      'Для работы приложения необходимы следующие разрешения:',
+                      style: context.textStyles.bodyMedium?.withColor(
+                        AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
 
-                  SizedBox(height: isMobileSize ? AppSpacing.lg : AppSpacing.xxl),
-                  _buildPermissionItem(
-                    icon: Icons.location_on,
-                    title: 'Местоположение',
-                    description: 'Для отправки вашего местоположения при SOS',
-                    granted: _locationGranted,
-                    required: true,
-                  ),
+                    const SizedBox(height: AppSpacing.xxl),
 
-                  _buildPermissionItem(
-                    icon: Icons.mic,
-                    title: 'Микрофон',
-                    description: 'Для записи аудио при активации SOS',
-                    granted: _microphoneGranted,
-                    required: true,
-                  ),
-
-                  _buildPermissionItem(
-                    icon: Icons.phone,
-                    title: 'Телефон',
-                    description: 'Для звонков экстренным контактам',
-                    granted: _phoneGranted,
-                    required: false,
-                  ),
-
-                  _buildPermissionItem(
-                    icon: Icons.sms,
-                    title: 'SMS',
-                    description: 'Для отправки SMS уведомлений',
-                    granted: _smsGranted,
-                    required: false,
-                  ),
-
-                  SizedBox(height: isMobileSize ? AppSpacing.lg : AppSpacing.xxl),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _requestAllPermissions,
-                      child: const Text('Предоставить разрешения'),
+                    _buildPermissionItem(
+                      icon: Icons.location_on,
+                      title: 'Местоположение',
+                      description: 'Для отправки вашего местоположения при SOS',
+                      granted: _locationGranted,
                     ),
-                  ),
 
-                  const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
 
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
-                    child: const Text('Пропустить'),
-                  ),
-                ],
+                    _buildPermissionItem(
+                      icon: Icons.mic,
+                      title: 'Микрофон',
+                      description: 'Для записи аудио при активации SOS',
+                      granted: _microphoneGranted,
+                    ),
+
+                    const SizedBox(height: AppSpacing.xxl),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _requestAllPermissions,
+                        child: const Text('Предоставить разрешения'),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.md),
+
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        );
+                      },
+                      child: const Text('Пропустить'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -201,10 +176,8 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
     required String title,
     required String description,
     required bool granted,
-    required bool required,
   }) {
     return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Padding(
         padding: AppSpacing.paddingMd,
         child: Row(
@@ -228,36 +201,9 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: AppSpacing.xs,
-                    alignment: WrapAlignment.start,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: context.textStyles.bodyLarge?.semiBold,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (required)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.sosRed.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Обязательно',
-                            style: context.textStyles.labelSmall?.withColor(
-                              AppColors.sosRed,
-                            ),
-                          ),
-                        ),
-                    ],
+                  Text(
+                    title,
+                    style: context.textStyles.bodyLarge?.semiBold,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
@@ -265,8 +211,6 @@ class _PermissionsRequestScreenState extends State<PermissionsRequestScreen> {
                     style: context.textStyles.bodySmall?.withColor(
                       AppColors.textSecondary,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
                   ),
                 ],
               ),

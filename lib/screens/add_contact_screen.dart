@@ -20,7 +20,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _relationController = TextEditingController();
-  final _telegramController = TextEditingController();
   bool _isPrimary = false;
   bool _isLoading = false;
 
@@ -30,7 +29,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _relationController.dispose();
-    _telegramController.dispose();
     super.dispose();
   }
 
@@ -46,7 +44,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
       phoneNumber: '+996${_phoneController.text}',
       email: _emailController.text.isEmpty ? null : _emailController.text,
       relation: _relationController.text.isEmpty ? null : _relationController.text,
-      telegramUsername: _telegramController.text.isEmpty ? null : _telegramController.text,
       isPrimary: _isPrimary,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -175,31 +172,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
                     ),
                   ),
                 ],
-              ),
-              
-              const SizedBox(height: AppSpacing.lg),
-              TextFormField(
-                controller: _telegramController,
-                decoration: InputDecoration(
-                  labelText: lang.translate('telegram_username'),
-                  hintText: 'username',
-                  helperText: lang.translate('telegram_hint'),
-                  prefixIcon: const Icon(Icons.alternate_email),
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
-                ],
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (value.length < 5) {
-                      return lang.translate('min_5_chars');
-                    }
-                    if (value.startsWith('@')) {
-                      return lang.translate('no_at_symbol');
-                    }
-                  }
-                  return null;
-                },
               ),
               
               const SizedBox(height: AppSpacing.lg),

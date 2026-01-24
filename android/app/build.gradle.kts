@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.alertme"
+    namespace = "com.sos.org.kg"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.dasakami.comtehno.adis.adis"
+        applicationId = "com.sos.org.kg"
         minSdk = 24    
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

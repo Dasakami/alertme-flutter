@@ -268,31 +268,21 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             lang.isRussian
-              ? 'Таймер начнет запись аудио. Если время истечет - SOS с аудио будет отправлен автоматически'
-              : 'Таймер аудио жазууну баштайт. Эгер убакыт бүтсө - SOS аудио менен автоматтык түрдө жөнөтүлөт',
+              ? 'Таймер безопасности автоматически активирует SOS в случае, если вы не сможете его отменить. Во время работы таймера ведется запись аудио для передачи в экстренные службы.'
+              : 'Коопсуздук таймери сиз аны жокко чыгара албасаңыз, автоматтык түрдө SOS активдештирет. Таймер иштегенде аудио жазуу жүргүзүлөт жана ал өзгөчө кырдаалдар кызматтарына жөнөтүлөт.',
             style: context.textStyles.bodyMedium?.withColor(AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
         
-        // ДЛЯ ТЕСТИРОВАНИЯ: Короткие таймеры
-        _buildTimerCategory(
-          lang.isRussian ? 'Тесты' : 'Тесттер',
-          [
-            _TimerOption(label: '30 ${lang.translate('seconds')}', seconds: 30),
-            _TimerOption(label: '1 ${lang.translate('minutes')}', minutes: 1),
-            _TimerOption(label: '2 ${lang.translate('minutes')}', minutes: 2),
-          ]
-        ),
-        
-        const SizedBox(height: AppSpacing.sm),
-        
+        // Быстрые таймеры
         _buildTimerCategory(
           lang.isRussian ? 'Быстрые' : 'Тез',
           [
-            _TimerOption(label: '5 ${lang.translate('minutes')}', minutes: 5),
-            _TimerOption(label: '10 ${lang.translate('minutes')}', minutes: 10),
+            _TimerOption(label: '3 ${lang.translate('seconds')}', seconds: 3),
+            _TimerOption(label: '30 ${lang.translate('seconds')}', seconds: 30),
+            _TimerOption(label: '1 ${lang.translate('minutes')}', minutes: 1),
           ]
         ),
         
@@ -301,20 +291,10 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         _buildTimerCategory(
           lang.isRussian ? 'Стандартные' : 'Стандарттык',
           [
+            _TimerOption(label: '5 ${lang.translate('minutes')}', minutes: 5),
+            _TimerOption(label: '10 ${lang.translate('minutes')}', minutes: 10),
             _TimerOption(label: '15 ${lang.translate('minutes')}', minutes: 15),
             _TimerOption(label: '30 ${lang.translate('minutes')}', minutes: 30),
-            _TimerOption(label: '45 ${lang.translate('minutes')}', minutes: 45),
-            _TimerOption(label: '1 ${lang.translate('hour')}', minutes: 60),
-          ]
-        ),
-        
-        const SizedBox(height: AppSpacing.sm),
-        
-        _buildTimerCategory(
-          lang.isRussian ? 'Длительные' : 'Узак',
-          [
-            _TimerOption(label: '1.5 ${lang.translate('hours')}', minutes: 90),
-            _TimerOption(label: '2 ${lang.translate('hours')}', minutes: 120),
           ]
         ),
         

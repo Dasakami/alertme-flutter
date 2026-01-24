@@ -1,4 +1,4 @@
-package com.example.alertme
+package com.sos.org.kg
 
 import io.flutter.embedding.android.FlutterActivity
 
