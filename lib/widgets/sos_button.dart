@@ -55,7 +55,6 @@ class _SOSButtonState extends State<SOSButton> with SingleTickerProviderStateMix
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
-      // ИЗМЕНЕНО: onTap вместо onLongPress
       onTap: widget.onActivate,
       child: AnimatedBuilder(
         animation: _scaleAnimation,

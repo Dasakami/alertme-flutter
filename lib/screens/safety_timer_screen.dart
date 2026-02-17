@@ -24,7 +24,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
   final AudioService _audioService = AudioService();
   
   int _selectedMinutes = 30;
-  int _selectedSeconds = 0; // Для коротких тестов
+  int _selectedSeconds = 0;
   Timer? _countdownTimer;
   bool _isRecording = false;
   int _recordingSeconds = 0;
@@ -51,7 +51,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       await _timerService.loadTimer(authProvider.currentUser!.id.toString());
       if (_timerService.hasActiveTimer) {
         _startCountdown();
-        // Если таймер активен, начинаем запись
         _startRecording();
       }
       setState(() {});
@@ -70,8 +69,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       }
     });
   }
-
-  // 🎤 НОВАЯ ЛОГИКА: Запись аудио во время таймера
   Future<void> _startRecording() async {
     final success = await _audioService.startRecording();
     
@@ -116,8 +113,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
       }
       return;
     }
-
-    // Останавливаем запись и получаем аудио
     String? audioPath;
     if (_isRecording) {
       audioPath = await _stopRecording();
@@ -141,8 +136,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         }
         return;
       }
-
-      // Отправляем SOS С АУДИО
       final alert = await sosProvider.triggerSOS(
         latitude: location.latitude,
         longitude: location.longitude,
@@ -151,7 +144,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         notes: lang.isRussian 
           ? 'Таймер безопасности истек. Аудио: ${_recordingSeconds}с'
           : 'Коопсуздук таймери бүттү. Аудио: ${_recordingSeconds}с',
-        audioPath: audioPath, // АУДИО ПРИКРЕПЛЕНО
+        audioPath: audioPath, 
       );
 
       if (alert != null && mounted) {
@@ -160,7 +153,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Ошибка активации SOS по таймеру: $e');
+      debugPrint('Ошибка активации SOS по таймеру: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -178,10 +171,8 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     
     if (authProvider.currentUser == null) return;
 
-    // Определяем длительность (может быть в секундах для тестов)
     Duration duration;
     if (_selectedMinutes == 0) {
-      // Это секунды (например, 30 секунд)
       duration = Duration(seconds: _selectedSeconds);
     } else {
       duration = Duration(minutes: _selectedMinutes);
@@ -193,7 +184,7 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
     );
     
     _startCountdown();
-    await _startRecording(); // Начинаем запись сразу
+    await _startRecording(); 
     
     setState(() {});
     
@@ -276,7 +267,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         ),
         const SizedBox(height: AppSpacing.lg),
         
-        // Быстрые таймеры
         _buildTimerCategory(
           lang.isRussian ? 'Быстрые' : 'Тез',
           [
@@ -437,7 +427,6 @@ class _SafetyTimerScreenState extends State<SafetyTimerScreen> {
         
         const SizedBox(height: AppSpacing.xl),
         
-        // Показываем статус записи
         if (_isRecording)
           Container(
             padding: AppSpacing.paddingMd,

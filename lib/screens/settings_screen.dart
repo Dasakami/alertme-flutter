@@ -91,23 +91,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingsTile(
               context,
               lang,
-              icon: Icons.notifications_outlined,
-              title: lang.translate('notifications'),
-              subtitle: lang.translate('notifications_settings'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            _buildSettingsTile(
-              context,
-              lang,
-              icon: Icons.support_agent,
-              title: 'Тех поддержка',
+              icon: Icons.chat,
+              title: 'WhatsApp',
               subtitle: 'Связаться с поддержкой',
               onTap: () => _launchWhatsApp(),
             ),
@@ -115,8 +100,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               lang,
               icon: Icons.video_library,
-              title: 'Инструкция',
-              subtitle: 'Посмотреть видео инструкцию',
+              title: 'YouTube',
+              subtitle: 'Посмотреть видео на YouTube',
               onTap: () => _launchYouTube(),
             ),
             
@@ -347,11 +332,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _launchWhatsApp() async {
-    const url = 'https://wa.me/996123456789'; // Замените на реальный номер
+    const url = 'https://wa.me/996503000733'; 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
-      // Обработка ошибки
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось открыть WhatsApp')),
@@ -361,7 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _launchYouTube() async {
-    const url = 'https://www.youtube.com/@AlertMe'; // Замените на реальный канал
+    const url = 'https://www.youtube.com/@sos-sakta'; 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {

@@ -53,7 +53,6 @@ class SubscriptionProvider with ChangeNotifier {
       final success = await _service.activateCode(code);
       
       if (success) {
-        // Обновляем текущую подписку после успешной активации
         await loadCurrentSubscription();
         debugPrint('✅ Код активирован, подписка обновлена');
       }
@@ -64,12 +63,10 @@ class SubscriptionProvider with ChangeNotifier {
       return success;
       
     } catch (e) {
-      // Сохраняем ошибку для отображения
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
       
-      // Пробрасываем ошибку выше для обработки в UI
       rethrow;
     }
   }
@@ -119,7 +116,6 @@ class SubscriptionProvider with ChangeNotifier {
     }
   }
 
-  // Метод для очистки ошибок
   void clearError() {
     _error = null;
     notifyListeners();

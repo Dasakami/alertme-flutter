@@ -23,7 +23,7 @@ class AuthProvider with ChangeNotifier {
       await _authService.loadUserProfile();
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Ошибка загрузки профиля: $e');
+      debugPrint('Ошибка загрузки профиля: $e');
     }
   }
 

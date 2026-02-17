@@ -38,9 +38,9 @@ class SubscriptionService {
           .map((e) => SubscriptionPlan.fromJson(e as Map<String, dynamic>))
           .toList();
           
-      debugPrint('✅ Загружено ${_plans.length} планов');
+      debugPrint('Загружено ${_plans.length} планов');
     } catch (e) {
-      debugPrint('❌ Ошибка загрузки планов: $e');
+      debugPrint(' Ошибка загрузки планов: $e');
       _plans = [];
       rethrow;
     }
@@ -48,11 +48,11 @@ class SubscriptionService {
 
   Future<void> loadCurrentSubscription() async {
     try {
-      debugPrint('📡 Загрузка подписки...');
+      debugPrint('Загрузка подписки...');
       
       final data = await _api.getJson('/subscriptions/current/', auth: true);
       
-      debugPrint('📦 Получен ответ: ${data.keys}');
+      debugPrint(' Получен ответ: ${data.keys}');
       
       final isPremium = data['is_premium'] as bool? ?? false;
       final status = data['status'] as String?;
@@ -72,13 +72,13 @@ class SubscriptionService {
           updatedAt: DateTime.now(),
         );
         
-        debugPrint('✅ Premium подписка: ${_currentSubscription?.plan.name}');
+        debugPrint('Premium подписка: ${_currentSubscription?.plan.name}');
       } else {
         _currentSubscription = null;
-        debugPrint('ℹ️ Free план');
+        debugPrint('Free план');
       }
     } catch (e) {
-      debugPrint('❌ Ошибка загрузки подписки: $e');
+      debugPrint('Ошибка загрузки подписки: $e');
       _currentSubscription = null;
     }
   }
@@ -95,16 +95,12 @@ class SubscriptionService {
       
       debugPrint('📦 Ответ сервера: $data');
       
-      // ИСПРАВЛЕНИЕ: Проверяем поле success
       final success = data['success'] as bool? ?? false;
       
       if (!success) {
-        // Возвращаем конкретную ошибку от сервера
         final errorMessage = data['error'] as String? ?? 'Неизвестная ошибка';
         throw Exception(errorMessage);
       }
-      
-      // Код активирован успешно
       if (data['subscription'] != null) {
         final subData = data['subscription'] as Map<String, dynamic>;
         
@@ -136,7 +132,7 @@ class SubscriptionService {
       
     } catch (e) {
       debugPrint('❌ Ошибка активации кода: $e');
-      rethrow; // Пробрасываем ошибку дальше для отображения пользователю
+      rethrow;
     }
   }
 

@@ -20,10 +20,10 @@ class SOSProvider with ChangeNotifier {
 
     try {
       await _service.loadAlerts().catchError((e) {
-        debugPrint('⚠️ Не удалось загрузить SOS алерты: $e');
+        debugPrint(' Не удалось загрузить SOS алерты: $e');
       });
     } catch (e) {
-      debugPrint('⚠️ Ошибка загрузки SOS: $e');
+      debugPrint(' Ошибка загрузки SOS: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -60,7 +60,7 @@ class SOSProvider with ChangeNotifier {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      debugPrint('❌ Ошибка в SOSProvider: $e');
+      debugPrint(' Ошибка в SOSProvider: $e');
       return null;
     }
   }

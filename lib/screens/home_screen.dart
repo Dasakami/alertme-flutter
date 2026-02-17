@@ -43,8 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
       sosProvider.loadAlerts(),
     ]);
   }
-
-  // 🚨 НОВАЯ ЛОГИКА: Быстрая активация SOS без аудио
   Future<void> _triggerQuickSOS() async {
     final contactProvider = context.read<ContactProvider>();
     final sosProvider = context.read<SOSProvider>();
@@ -60,8 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
-
-    // Показываем индикатор загрузки
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -71,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     try {
-      // Получаем местоположение
       final location = await locationService.getCurrentLocation();
       
       if (location == null) {
@@ -88,15 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         return;
       }
-
-      // Мгновенная отправка SOS БЕЗ аудио
       final alert = await sosProvider.triggerSOS(
         latitude: location.latitude,
         longitude: location.longitude,
         address: location.address,
         activationMethod: 'button',
         notes: lang.isRussian ? 'Быстрая активация SOS' : 'Тез SOS активациялоо',
-        audioPath: null, // НЕТ АУДИО
+        audioPath: null, 
       );
 
       if (alert == null) {
@@ -113,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context); // Закрываем индикатор
+        Navigator.pop(context); 
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SOSActiveScreen()),
@@ -217,7 +210,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       const MiniMap(),
                       
                       const SizedBox(height: AppSpacing.xxl),
-                      // ИЗМЕНЕНО: Одно нажатие вместо зажимания
                       SOSButton(onActivate: _triggerQuickSOS),
                       
                       const SizedBox(height: AppSpacing.xxl),

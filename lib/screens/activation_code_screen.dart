@@ -34,17 +34,14 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
     final code = _codeController.text.trim().toUpperCase();
 
     try {
-      // Пытаемся активировать код
       final success = await subscriptionProvider.activateCode(code);
 
       if (!mounted) return;
 
       if (success) {
-        // Обновляем профиль пользователя и подписку
         await authProvider.loadProfile();
         await subscriptionProvider.loadCurrentSubscription();
         
-        // Закрываем экран и показываем успех
         Navigator.pop(context);
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -55,7 +52,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '✅ Premium подписка активирована!',
+                    ' Premium подписка активирована!',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -69,17 +66,13 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
       }
       
     } catch (e) {
-      // Обрабатываем ошибку
       if (mounted) {
-        // Извлекаем человекочитаемое сообщение об ошибке
         String errorMessage = e.toString();
         
-        // Убираем "Exception: " из начала
         if (errorMessage.startsWith('Exception: ')) {
           errorMessage = errorMessage.substring(11);
         }
         
-        // Показываем конкретную ошибку
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -123,8 +116,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: AppSpacing.xl),
-              
-              // Иконка
               Container(
                 width: 100,
                 height: 100,
@@ -157,7 +148,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               
               const SizedBox(height: AppSpacing.xxl),
               
-              // Поле ввода кода
+
               TextFormField(
                 controller: _codeController,
                 decoration: const InputDecoration(
@@ -184,7 +175,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               
               const SizedBox(height: AppSpacing.xxl),
               
-              // Кнопка активации
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -204,7 +194,6 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
               
               const SizedBox(height: AppSpacing.lg),
               
-              // Инструкция
               Container(
                 padding: AppSpacing.paddingLg,
                 decoration: BoxDecoration(
@@ -228,7 +217,7 @@ class _ActivationCodeScreenState extends State<ActivationCodeScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _buildStep('1', 'Откройте Telegram'),
-                    _buildStep('2', 'Найдите бот @AlertMePremiumBot'),
+                    _buildStep('2', 'Найдите бот @sos_kg_bot'),
                     _buildStep('3', 'Оплатите подписку звездами'),
                     _buildStep('4', 'Скопируйте полученный код'),
                     _buildStep('5', 'Вставьте код в это поле'),
