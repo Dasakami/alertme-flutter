@@ -192,14 +192,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               const SizedBox(height: AppSpacing.md),
               
               Text(
-                '${lang.translate('verification_sent')}\n${widget.phoneNumber}',
+                'Тестовый код; 123456',
                 style: context.textStyles.bodyLarge?.withColor(AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Если SMS недоступно, используйте код 123456',
-                style: context.textStyles.bodyMedium?.withColor(AppColors.softCyan),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xxl),
@@ -241,28 +235,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                       : Text(lang.translate('verify')),
                 ),
               ),
-              
-              const SizedBox(height: AppSpacing.md),
-              if (authProvider.error?.contains('Тестовый код') ?? false)
-                Container(
-                  padding: AppSpacing.paddingMd,
-                  decoration: BoxDecoration(
-                    color: AppColors.softCyan.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.softCyan),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.info_outline, color: AppColors.softCyan),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        '🔑 Для теста используйте код: 123456',
-                        style: context.textStyles.bodyMedium?.semiBold.withColor(AppColors.deepBlue),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),

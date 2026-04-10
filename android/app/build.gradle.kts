@@ -3,11 +3,24 @@ plugins {
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
+import java.util.Properties
+import java.io.FileInputStream
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
 
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 android {
     namespace = "com.sos.org.kg"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
