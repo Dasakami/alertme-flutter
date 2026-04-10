@@ -115,6 +115,11 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                       : Text(lang.translate('send_code')),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Тестовый код для временной авторизации: 123456',
+                  style: context.textStyles.bodyMedium?.withColor(AppColors.softCyan),
+                ),
               ],
             ),
           ),

@@ -196,7 +196,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 style: context.textStyles.bodyLarge?.withColor(AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
-              
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Если SMS недоступно, используйте код 123456',
+                style: context.textStyles.bodyMedium?.withColor(AppColors.softCyan),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: AppSpacing.xxl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

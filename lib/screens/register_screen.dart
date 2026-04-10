@@ -228,6 +228,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         : Text(lang.translate('continue')),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Тестовый код для временной авторизации: 123456',
+                  style: context.textStyles.bodyMedium?.withColor(AppColors.softCyan),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
