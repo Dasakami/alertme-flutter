@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.sos.org.kg",
+    "sha256_cert_fingerprints": ["0B:8F:BA:6A:FF:0C:12:88:E2:A6:22:2F:82:3B:BD:A3:27:19:1C:9F:18:DA:7D:82:3E:EF:39:C5:AB:26:95:57"]
+  }
+}]
